@@ -33,7 +33,6 @@ class RegisterRequest(BaseModel):
     username: str
     email: str
     password: str
-    rePassword: str
 
 class LeetCodeLinkRequest(BaseModel):
     lcUsername: str
@@ -47,5 +46,27 @@ class HomeRequest(BaseModel):
     points: int = 0
     #tournaments: 
 
-app.post("/register")
-#def register_user(data: RegisterRequest):
+@app.post("/register")
+async def register_user(data: RegisterRequest):
+    #for right now just success response. no interaction with mongodb
+    return {
+        "message": "User registered successfully",
+        "username": data.username,
+        "email": data.email,
+    }
+
+@app.post("/login")
+async def login_user(data: LoginRequest):
+    #same thing, this is just so frontend can use it
+    return {
+        "message": "Login successful",
+        "username": data.username
+    }
+
+@app.post("/link")
+async def link_user(data: LeetCodeLinkRequest):
+    #same thing
+    return {
+        "message": "Link successful",
+        "lcUsername": data.lcUsername
+    }
