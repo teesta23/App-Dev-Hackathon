@@ -1,8 +1,12 @@
-
+import { useState } from 'react'
 import './App.css'
-
+import Home2 from './Home2.tsx'
 
 function App() {
+  const [showHome2, setShowHome2] = useState(false)
+
+  if (showHome2) return <Home2 />
+
   return (
     <div className="page">
       <nav className="nav">
@@ -27,7 +31,7 @@ function App() {
         <p className="subtitle">
           form a team and compete for the best leetcode score blah blah
         </p>
-        <button className="cta">
+        <button className="cta" onClick={() => setShowHome2(true)}>
           <span>&gt;</span> get started
         </button>
       </main>
