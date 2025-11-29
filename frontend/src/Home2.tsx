@@ -13,9 +13,9 @@ type LeaderboardEntry = {
   delta: string
 }
 
-type ActivityItem = {
+type LessonItem = {
   title: string
-  status: 'open' | 'in-progress' | 'done'
+  status: 'started' | 'unopened'
   detail: string
 }
 
@@ -33,11 +33,11 @@ const leaderboard: LeaderboardEntry[] = [
   { rank: 5, name: 'Runtime Terrors', points: 1106, delta: '+2' },
 ]
 
-const activities: ActivityItem[] = [
-  { title: 'Weekend sprint kickoff', status: 'open', detail: '4 problems released • closes Sunday' },
-  { title: 'Review PRs for team challenge', status: 'in-progress', detail: 'Due tonight • 3 pending reviews' },
-  { title: 'Schedule scrim vs Byte Surge', status: 'open', detail: 'Pick a slot for Thursday' },
-  { title: 'Retro: optimize DFS patterns', status: 'done', detail: 'Action items posted' },
+const activities: LessonItem[] = [
+  { title: 'example lesson 1', status: 'started', detail: 'a basic intro to python' },
+  { title: 'example lesson 2', status: 'unopened', detail: 'learn how to use your terminal' },
+  { title: 'example lesson 3', status: 'unopened', detail: 'a review of DSA' },
+  { title: 'example lesson 4', status: 'unopened', detail: 'java fundamentals' },
 ]
 
 function Home2() {
@@ -90,22 +90,22 @@ function Home2() {
           </div>
         </section>
 
-        <section className="panel activity-panel">
+        <section className="panel lesson-panel">
           <div className="panel-head">
             <div>
               <div className="panel-label">today</div>
-              <h2 className="panel-title">Activity</h2>
+              <h2 className="panel-title">Lessons</h2>
             </div>
             <button className="ghost-btn">view all</button>
           </div>
-          <div className="activity-list">
+          <div className="lesson-list">
             {activities.map((item) => (
-              <div key={item.title} className={`activity-card status-${item.status}`}>
-                <div className="activity-top">
+              <div key={item.title} className={`lesson-card status-${item.status}`}>
+                <div className="lesson-top">
                   <span className="status-dot" aria-hidden />
-                  <div className="activity-title">{item.title}</div>
+                  <div className="lesson-title">{item.title}</div>
                 </div>
-                <div className="activity-detail">{item.detail}</div>
+                <div className="lesson-detail">{item.detail}</div>
               </div>
             ))}
           </div>
