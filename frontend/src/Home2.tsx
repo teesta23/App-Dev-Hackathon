@@ -105,7 +105,7 @@ function Home2() {
               </div>
             </div>
 
-            <div className={styles.daysLeft}># DAYS LEFT</div>
+            <div className={styles.currentStreak}>CURRENT STREAK:</div>
           </div>
           </div>
 

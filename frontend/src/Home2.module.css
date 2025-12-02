@@ -299,7 +299,7 @@ letter-spacing: 0.4px;
 .highlightRow span:nth-child(2) {
   font-weight: 800;
 }
-.daysLeft {
+.currentStreak {
   text-align: center;
   color: #6f4a9d;
   font-weight: 800;
