@@ -58,6 +58,11 @@
   background: transparent;
   padding: 10px 12px;
 }
+.footerMenu .navItem:hover {
+  background: rgba(96, 75, 167, 0.45);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+  transform: translateY(-1px);
+}
 .icon {
   flex-shrink: 0;
 }
