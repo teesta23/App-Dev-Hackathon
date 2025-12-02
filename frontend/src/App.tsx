@@ -1,11 +1,31 @@
 import { useState } from 'react'
 import './App.css'
 import Home2 from './Home2.tsx'
+import Login from './Login.tsx'
+import Signup from './Signup.tsx'
 
 function App() {
-  const [showHome2, setShowHome2] = useState(false)
+  const [view, setView] = useState<'landing' | 'login' | 'signup' | 'dashboard'>('landing')
 
-  if (showHome2) return <Home2 />
+  if (view === 'dashboard') return <Home2 />
+  if (view === 'login') {
+    return (
+      <Login
+        onBack={() => setView('landing')}
+        onLogin={() => setView('dashboard')}
+        onCreateAccount={() => setView('signup')}
+      />
+    )
+  }
+  if (view === 'signup') {
+    return (
+      <Signup
+        onBack={() => setView('landing')}
+        onCreate={() => setView('dashboard')}
+        onLogin={() => setView('login')}
+      />
+    )
+  }
 
   return (
     <div className="page">
@@ -19,7 +39,7 @@ function App() {
             <a href="#">about</a>
             <a href="#">contact</a>
           </div>
-          <button className="login">log in</button>
+          <button className="login" onClick={() => setView('login')}>log in</button>
         </div>
       </nav>
 
@@ -31,7 +51,7 @@ function App() {
         <p className="subtitle">
           form a team and compete for the best leetcode score blah blah
         </p>
-        <button className="cta" onClick={() => setShowHome2(true)}>
+        <button className="cta" onClick={() => setView('signup')}>
           <span>&gt;</span> get started
         </button>
       </main>
