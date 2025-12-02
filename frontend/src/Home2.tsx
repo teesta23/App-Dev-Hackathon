@@ -42,47 +42,48 @@ function Home2() {
       </aside>
 
       <main className={styles.content}>
-        <div className={styles.topbar}>welcome back, John</div>
-        <div className={styles.topRow}>
-          <div className={styles.profileCard}>
-            <div className={styles.avatar}>
-              <span className={`${styles.icon} ${styles['icon-pfp']}`} />
+        <div className={styles.topbar}>
+          <div className={styles.topbarContent}>
+            <div className={styles.topbarProfile}>
+              <div className={styles.topbarAvatar}>
+                <span className={`${styles.icon} ${styles['icon-pfp']}`} />
+              </div>
+              <div className={styles.profileInfo}>
+                <div className={styles.profileName}>John Smith</div>
+              </div>
             </div>
-            <div className={styles.profileInfo}>
-              <div className={styles.profileName}>John Smith</div>
-              <div className={styles.joined}>JOINED NOV 28, 2025</div>
-            </div>
-          </div>
 
-          <div className={styles.pointsCard}>
-            <div className={styles.pointsNumber}>2876</div>
-            <div className={styles.pointsLabel}>CURRENT POINTS</div>
+            <div className={styles.topbarPoints}>
+              <div className={styles.pointsNumber}>2876</div>
+              <div className={styles.pointsLabel}>CURRENT POINTS</div>
+            </div>
           </div>
         </div>
 
         <div className={styles.sectionHeaders}>
-          <div className={styles.sectionTitle}>[this week’s tournaments]</div>
-          <div className={styles.sectionTitle}>[next lessons]</div>
+          <div className={styles.sectionTitleTour}>[this week’s tournaments]</div>
+          <div className={styles.sectionTitleLes}>[next lessons]</div>
         </div>
 
         <div className={styles.mainPanels}>
-          <div className={styles.tournamentCard}>
-            <div className={styles.tournamentHeader}>example tournament 1</div>
+          <div className={styles.tournamentShell}>
+            <div className={styles.tournamentCard}>
+              <div className={styles.tournamentHeader}>example tournament 1</div>
 
-            <div className={styles.tableWrapper}>
-              <div className={`${styles.tableRow} ${styles.tableHead}`}>
-                <span>#</span>
-                <span>PLAYERS</span>
-                <span>SOLVED TODAY</span>
-                <span>POINTS</span>
-              </div>
-              <div className={styles.tableBody}>
-                <div className={styles.tableRow}>
-                  <span>1</span>
-                  <span>username</span>
-                  <span>10</span>
-                  <span>2375</span>
+              <div className={styles.tableWrapper}>
+                <div className={`${styles.tableRow} ${styles.tableHead}`}>
+                  <span>#</span>
+                  <span>PLAYERS</span>
+                  <span>SOLVED TODAY</span>
+                  <span>POINTS</span>
                 </div>
+                <div className={styles.tableBody}>
+                  <div className={styles.tableRow}>
+                    <span>1</span>
+                    <span>username</span>
+                    <span>10</span>
+                    <span>2375</span>
+                  </div>
                 <div className={styles.tableRow}>
                   <span>2</span>
                   <span>username</span>
@@ -95,10 +96,17 @@ function Home2() {
                   <span>3</span>
                   <span>972</span>
                 </div>
+                <div className={styles.tableRow}>
+                  <span>4</span>
+                  <span>alex</span>
+                  <span>2</span>
+                  <span>740</span>
+                </div>
               </div>
             </div>
 
             <div className={styles.daysLeft}># DAYS LEFT</div>
+          </div>
           </div>
 
           <div className={styles.lessonsColumn}>
@@ -110,11 +118,11 @@ function Home2() {
 
         <div className={styles.actions}>
           <button className={styles.primaryButton}>
-            <span className={`${styles.icon} ${styles['icon-arrow']}`} />
+            <span className={styles.arrowText}>&gt;</span>
             view all
           </button>
           <button className={styles.primaryButton}>
-            <span className={`${styles.icon} ${styles['icon-arrow']}`} />
+            <span className={styles.arrowText}>&gt;</span>
             all lessons
           </button>
         </div>
