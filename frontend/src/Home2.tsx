@@ -42,6 +42,7 @@ function Home2() {
       </aside>
 
       <main className={styles.content}>
+        <div className={styles.topbar}>welcome back, John</div>
         <div className={styles.topRow}>
           <div className={styles.profileCard}>
             <div className={styles.avatar}>

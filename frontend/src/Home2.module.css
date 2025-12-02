@@ -68,7 +68,8 @@
 }
 .content {
   flex: 1;
-  padding: 36px 44px;
+  position: relative;
+  padding: 180px 44px 36px;
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -77,6 +78,8 @@
   display: flex;
   gap: 24px;
   align-items: stretch;
+  position: relative;
+  z-index: 1;
 }
 .profileCard {
   flex: 1;
@@ -348,10 +351,23 @@
   background-image: image('ellipse9.png');
 }
 .topbar{
-  width: 1192px;
-height: 144px;
-background: var(--mainlight, #D8B5FF);
-
-/* shadow */
-box-shadow: 0 0 50px 0 rgba(106, 74, 142, 0.20);
+  width: 100%;
+  height: 144px;
+  margin: 0;
+  padding: 0 32px;
+  border-radius: 0;
+  background: var(--mainlight, #D8B5FF);
+  box-shadow: 0 0 50px 0 rgba(106, 74, 142, 0.2);
+  display: flex;
+  align-items: center;
+  color: #3b215e;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  pointer-events: none;
 }
