@@ -197,6 +197,13 @@
   box-shadow: 0 14px 28px rgba(106, 74, 142, 0.16);
 }
 
+.errorText {
+  color: #e35656;
+  font-weight: 700;
+  text-transform: lowercase;
+  letter-spacing: 0.2px;
+}
+
 .primaryButton {
   display: inline-flex;
   align-items: center;

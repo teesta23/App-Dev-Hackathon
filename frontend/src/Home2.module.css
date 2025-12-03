@@ -36,6 +36,10 @@
   align-items: center;
   gap: 14px;
   padding: 12px 14px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 700;

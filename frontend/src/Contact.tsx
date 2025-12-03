@@ -6,9 +6,10 @@ type ContactProps = {
   variant: 'landing' | 'dashboard'
   onBack?: () => void
   onLogout?: () => void
+  onGoToSettings?: () => void
 }
 
-function Contact({ variant, onBack, onLogout }: ContactProps) {
+function Contact({ variant, onBack, onLogout, onGoToSettings }: ContactProps) {
   const isDashboard = variant === 'dashboard'
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -43,7 +44,13 @@ function Contact({ variant, onBack, onLogout }: ContactProps) {
           <span className={`${homeStyles.icon} ${homeStyles['icon-chat']}`} />
           support
         </button>
-        <button className={homeStyles.navItem} type="button">
+        <button
+          className={homeStyles.navItem}
+          type="button"
+          onClick={() => {
+            onGoToSettings?.()
+          }}
+        >
           <span className={`${homeStyles.icon} ${homeStyles['icon-settings']}`} />
           settings
         </button>

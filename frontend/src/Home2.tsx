@@ -2,10 +2,11 @@ import styles from './Home2.module.css'
 
 type Home2Props = {
   onGoToContact?: () => void
+  onGoToSettings?: () => void
   onLogout?: () => void
 }
 
-function Home2({ onGoToContact, onLogout }: Home2Props) {
+function Home2({ onGoToContact, onGoToSettings, onLogout }: Home2Props) {
   return (
     <div className={styles.page}>
       <aside className={styles.nav}>
@@ -42,10 +43,16 @@ function Home2({ onGoToContact, onLogout }: Home2Props) {
             <span className={`${styles.icon} ${styles['icon-chat']}`} />
             support
           </a>
-          <a className={styles.navItem} href="#">
+          <button
+            className={styles.navItem}
+            type="button"
+            onClick={() => {
+              onGoToSettings?.()
+            }}
+          >
             <span className={`${styles.icon} ${styles['icon-settings']}`} />
             settings
-          </a>
+          </button>
           <a
             className={styles.navItem}
             href="#"

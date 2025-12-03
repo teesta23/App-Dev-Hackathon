@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import styles from './Login.module.css'
 
 type SignupProps = {
@@ -8,8 +8,21 @@ type SignupProps = {
 }
 
 function Signup({ onBack, onCreate, onLogin }: SignupProps) {
+  const [error, setError] = useState<string | null>(null)
+
+  const isEmail = (value: string) => /\S+@\S+\.\S+/.test(value)
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const username = String(formData.get('username') ?? '').trim()
+
+    if (isEmail(username)) {
+      setError('Use a username, not an email, for this field.')
+      return
+    }
+
+    setError(null)
     onCreate?.()
   }
 
@@ -51,13 +64,22 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
 
           <label className={styles.inputGroup}>
             <span>username</span>
-            <input name="username" type="text" placeholder="janedoe" required />
+            <input
+              name="username"
+              type="text"
+              placeholder="janedoe"
+              pattern="[^@\\s]+"
+              title="Usernames cannot contain @"
+              required
+            />
           </label>
 
           <label className={styles.inputGroup}>
             <span>email</span>
             <input name="email" type="email" placeholder="you@example.com" required />
           </label>
+
+          {error ? <div className={styles.errorText}>{error}</div> : null}
 
           <button className={styles.primaryButton} type="submit">
             <span className={styles.arrowText}>&gt;</span> create account

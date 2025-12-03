@@ -4,12 +4,21 @@ import Contact from './Contact.tsx'
 import Home2 from './Home2.tsx'
 import LinkLeetcode from './LinkLeetcode.tsx'
 import Login from './Login.tsx'
+import Settings from './Settings.tsx'
 import Signup from './Signup.tsx'
 import SkillLevel, { type SkillLevelOption } from './SkillLevel.tsx'
 
 function App() {
   const [view, setView] = useState<
-    'landing' | 'login' | 'signup' | 'link' | 'skill' | 'dashboard' | 'contactLanding' | 'contactDashboard'
+    | 'landing'
+    | 'login'
+    | 'signup'
+    | 'link'
+    | 'skill'
+    | 'dashboard'
+    | 'contactLanding'
+    | 'contactDashboard'
+    | 'settings'
   >('landing')
   const [, setSkillLevel] = useState<SkillLevelOption | null>(null)
   const [, setLeetcodeUsername] = useState<string>('')
@@ -18,13 +27,30 @@ function App() {
     return (
       <Home2
         onGoToContact={() => setView('contactDashboard')}
+        onGoToSettings={() => setView('settings')}
         onLogout={() => setView('landing')}
       />
     )
   }
   if (view === 'contactLanding') return <Contact variant="landing" onBack={() => setView('landing')} />
   if (view === 'contactDashboard') {
-    return <Contact variant="dashboard" onBack={() => setView('dashboard')} onLogout={() => setView('landing')} />
+    return (
+      <Contact
+        variant="dashboard"
+        onBack={() => setView('dashboard')}
+        onLogout={() => setView('landing')}
+        onGoToSettings={() => setView('settings')}
+      />
+    )
+  }
+  if (view === 'settings') {
+    return (
+      <Settings
+        onBack={() => setView('dashboard')}
+        onLogout={() => setView('landing')}
+        onGoToSupport={() => setView('contactDashboard')}
+      />
+    )
   }
   if (view === 'login') {
     return (
