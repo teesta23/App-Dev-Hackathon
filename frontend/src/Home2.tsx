@@ -1,4 +1,6 @@
 import styles from './Home2.module.css'
+import { tracks, type LessonNode } from './Lessons.tsx'
+import type { SkillLevelOption } from './SkillLevel.tsx'
 
 type Home2Props = {
   skillLevel?: SkillLevelOption | null
@@ -239,5 +241,3 @@ function Home2({
 }
 
 export default Home2
-import { tracks, type LessonNode } from './Lessons.tsx'
-import type { SkillLevelOption } from './SkillLevel.tsx'
