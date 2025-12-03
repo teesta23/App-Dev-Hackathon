@@ -1,12 +1,15 @@
 .page {
   display: flex;
+  align-items: flex-start;
   min-height: 100vh;
   background: linear-gradient(180deg, #f5edff 0%, #efe6ff 48%, #ebdeff 100%);
   color: #53377a;
   font-family: 'Inter', sans-serif;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   position: relative;
   isolation: isolate;
+  padding-left: 248px;
 }
 
 .page::before,
@@ -45,8 +48,6 @@
   flex-direction: column;
   gap: 22px;
   min-height: 100vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   position: relative;
   z-index: 1;
 }

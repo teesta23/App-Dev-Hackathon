@@ -10,10 +10,50 @@ import Signup from './Signup.tsx'
 import SkillLevel, { type SkillLevelOption } from './SkillLevel.tsx'
 import Tournaments from './Tournaments.tsx'
 import Room from './Room.tsx'
+import About from './About.tsx'
+import competeFriendsImg from '../images/tourney.png'
+import codeImg from '../images/coding.png'
+import motivatedImg from '../images/motivated.png'
+import decorateImg from '../images/decorate.png'
+import streakImg from '../images/streak.png'
 
 function App() {
+  const landingFeatures = [
+    {
+      title: 'compete with friends',
+      body: 'Join tournaments with your friends to compete for the most points. The more problems you solve, the more points you’ll earn.',
+      graphic: 'ladder',
+      graphicImage: competeFriendsImg,
+    },
+    {
+      title: 'learn to code',
+      body: 'Whether you’re a complete beginner or an expert coder, our selected lesson plans will help you improve your coding every day.',
+      graphic: 'lessons',
+      graphicImage: codeImg,
+    },
+    {
+      title: 'stay motivated',
+      body: 'Daily lessons and tournament scores keep you motivated to meet your LeetCode goals.',
+      graphic: 'streak',
+      graphicImage: motivatedImg,
+    },
+    {
+      title: 'decorate your room',
+      body: 'Use the points you earn from lessons and tournaments to buy decorations for your space however you want.',
+      graphic: 'room',
+      graphicImage: decorateImg,
+    },
+    {
+      title: 'save your streak',
+      body: 'Keep your streak alive across ladders. Protect it with streak saves so you don’t have to be the one to break it.',
+      graphic: 'shield',
+      graphicImage: streakImg,
+    },
+  ]
+
   const [view, setView] = useState<
     | 'landing'
+    | 'about'
     | 'login'
     | 'signup'
     | 'link'
@@ -146,6 +186,15 @@ function App() {
       />
     )
   }
+  if (view === 'about') {
+    return (
+      <About
+        onBack={() => setView('landing')}
+        onGoToSignup={() => setView('signup')}
+        onGoToContact={() => setView('contactLanding')}
+      />
+    )
+  }
 
   return (
     <div className="page">
@@ -155,8 +204,24 @@ function App() {
         </div>
         <div className="nav-right">
           <div className="nav-links">
-            <a href="#">explore</a>
-            <a href="#">about</a>
+            <a
+              href="#features"
+              onClick={(event) => {
+                event.preventDefault()
+                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+              }}
+            >
+              explore
+            </a>
+            <a
+              href="#"
+              onClick={(event) => {
+                event.preventDefault()
+                setView('about')
+              }}
+            >
+              about
+            </a>
             <a
               href="#"
               onClick={(event) => {
@@ -183,6 +248,37 @@ function App() {
           <span>&gt;</span> get started
         </button>
       </main>
+
+      <section className="feature-section" id="features">
+        <div className="feature-header">
+          <p className="feature-kicker">why leeterboard</p>
+          <h2 className="feature-title">A playful way to get better, together</h2>
+          <p className="feature-sub">
+            Streaks, tournaments, lessons, and a space to show off the points you earn. Scroll to see how it works.
+          </p>
+        </div>
+
+        <div className="feature-grid">
+          {landingFeatures.map((feature, index) => (
+            <div
+              key={feature.title}
+              className={`feature-row ${index % 2 === 1 ? 'feature-row--flip' : ''}`}
+            >
+              <div className={`feature-graphic feature-graphic--${feature.graphic}`} aria-hidden="true">
+                {feature.graphicImage ? (
+                  <img src={feature.graphicImage} alt={feature.title} />
+                ) : (
+                  <span className="feature-emoji" />
+                )}
+              </div>
+              <div className="feature-copy">
+                <h3>{feature.title}</h3>
+                <p>{feature.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

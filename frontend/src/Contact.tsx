@@ -25,6 +25,18 @@ function Contact({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const name = (formData.get('name') as string) ?? ''
+    const email = (formData.get('email') as string) ?? ''
+    const topic = (formData.get('topic') as string) ?? ''
+    const message = (formData.get('message') as string) ?? ''
+
+    const subject = encodeURIComponent(topic ? `[Leeterboard] ${topic}` : '[Leeterboard] Support request')
+    const body = encodeURIComponent(
+      `Name: ${name}\nEmail: ${email}\nTopic: ${topic || 'N/A'}\n\n${message || ''}`,
+    )
+
+    window.location.href = `mailto:leeterboard.lb@gmail.com?subject=${subject}&body=${body}`
   }
 
   const renderSidebar = () => (
@@ -139,19 +151,21 @@ function Contact({
               <div className={styles.contactRow}>
                 <div>
                   <div className={styles.contactLabel}>email</div>
-                  <div className={styles.contactValue}>support@leeterboard.dev</div>
+                  <div className={styles.contactValue}>leeterboard.lb@gmail.com</div>
                   <p className={styles.contactDesc}>For anything detailed: tournaments, billing, team invites.</p>
                 </div>
-                <a className={styles.pillButton} href="mailto:support@leeterboard.dev">email support</a>
+                <a className={styles.pillButton} href="mailto:leeterboard.lb@gmail.com">email support</a>
               </div>
 
               <div className={styles.contactRow}>
                 <div>
-                  <div className={styles.contactLabel}>slack / discord</div>
+                  <div className={styles.contactLabel}>discord</div>
                   <div className={styles.contactValue}>#help-and-support</div>
                   <p className={styles.contactDesc}>Drop a quick note and we’ll jump in.</p>
                 </div>
-                <button className={styles.pillButton} type="button">join channel</button>
+                <a className={styles.pillButton} href="https://discord.gg/QZaBWnD3Ar" target="_blank" rel="noreferrer">
+                  join discord
+                </a>
               </div>
             </div>
           </section>

@@ -1,9 +1,11 @@
 .page {
   display: flex;
+  align-items: flex-start;
   min-height: 100vh;
   background: linear-gradient(180deg, #f6edff 0%, #efe2ff 45%, #e5d6ff 100%);
   color: #3b215e;
   font-family: 'Inter', sans-serif;
+  padding-left: 248px;
 }
 
 .content {

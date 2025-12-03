@@ -1,12 +1,24 @@
 .page {
   display: flex;
+  align-items: flex-start;
   min-height: 100vh;
   background: linear-gradient(180deg, #f5edff 0%, #efe6ff 48%, #ebdeff 100%);
   color: #53377a;
   font-family: 'Inter', sans-serif;
+  padding-left: 248px;
 }
 .nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
   width: 248px;
+  flex: 0 0 248px;
+  box-sizing: border-box;
+  align-self: flex-start;
+  z-index: 10;
   padding: 28px 20px;
   background: var(--grad, linear-gradient(167deg, #231d5b 12.44%, #7b4daf 72.27%));
   color: #f4eaff;

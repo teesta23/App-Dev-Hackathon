@@ -11,7 +11,7 @@ type TournamentsProps = {
   onLogout?: () => void
 }
 
-const activeTournaments = [
+const initialTournaments = [
   {
     name: 'weekly sprint',
     mode: 'team ladder',
@@ -100,6 +100,7 @@ function Tournaments({
   onGoToRoom,
   onLogout,
 }: TournamentsProps) {
+  const [tournaments, setTournaments] = useState(initialTournaments)
   const [expandedLadders, setExpandedLadders] = useState<Record<string, boolean>>({})
 
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
@@ -110,10 +111,21 @@ function Tournaments({
     event.preventDefault()
   }
 
+  const handleLeave = (name: string) => {
+    const confirmLeave = window.confirm(`Leave "${name}"? Your ladder placement will be removed.`)
+    if (!confirmLeave) return
+
+    setTournaments((prev) => prev.filter((tour) => tour.name !== name))
+    setExpandedLadders((prev) => {
+      const { [name]: _removed, ...rest } = prev
+      return rest
+    })
+  }
+
   const ladderEntries = useMemo(() => {
     const filled: typeof ladderByName = {}
 
-    activeTournaments.forEach((tour) => {
+    tournaments.forEach((tour) => {
       const base = ladderByName[tour.name] ?? []
       const missing = Math.max(0, tour.totalPlayers - base.length)
       const filledEntries = [...base]
@@ -133,7 +145,7 @@ function Tournaments({
     })
 
     return filled
-  }, [])
+  }, [tournaments])
 
   const getInitials = (name: string) => {
     const parts = name.trim().split(/\s+/)
@@ -220,7 +232,6 @@ function Tournaments({
           </div>
 
           <div className={styles.headerCopy}>
-            <p className={styles.kicker}>tournaments</p>
             <h1 className={styles.title}>
               <span className={styles.titleAccent}>[tournaments]</span> rally your crew and build your streak
             </h1>
@@ -245,73 +256,91 @@ function Tournaments({
               </div>
 
               <div className={styles.standingList}>
-                {activeTournaments.map((tour) => {
-                  const entries = ladderEntries[tour.name] ?? []
-                  const showAll = expandedLadders[tour.name]
-                  const visibleEntries = showAll ? entries : entries.slice(0, 5)
-
-                  return (
-                    <div key={tour.name} className={styles.standingCard}>
-                      <div className={styles.standingTop}>
-                      <div>
-                        <div className={styles.tourName}>{tour.name}</div>
-                      </div>
-                        <div className={styles.metaPills}>
-                          <span className={styles.metaChip}>{tour.totalPlayers} players</span>
-                          <span className={styles.metaChip}>{tour.streak}</span>
-                          <span
-                            className={`${styles.metaChip} ${
-                              tour.trend === 'up' ? styles.momentumPositive : styles.momentumNegative
-                            }`}
-                          >
-                            {tour.momentum}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className={styles.topFiveList}>
-                        {visibleEntries.map((entry) => (
-                          <div
-                            key={`${tour.name}-${entry.rank}-${entry.name}`}
-                            className={`${styles.topRow} ${entry.isYou ? styles.ladderHighlight : ''}`}
-                          >
-                            <span className={styles.rank}>#{entry.rank}</span>
-                            <div className={styles.playerInfo}>
-                              <span className={styles.avatar}>{getInitials(entry.name)}</span>
-                              <div className={styles.playerText}>
-                                <div className={styles.playerName}>{entry.name}</div>
-                                <div className={styles.playerSub}>{entry.solvedToday} solved today</div>
-                              </div>
-                            </div>
-                            <div className={styles.points}>{entry.points} pts</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className={styles.cardActions}>
-                        <div className={styles.statSub}>
-                          {showAll
-                            ? `Showing all ${entries.length} placements.`
-                            : `Showing top ${visibleEntries.length} of ${tour.totalPlayers}.`}
-                        </div>
-                        {entries.length > 5 && (
-                          <button
-                            className={styles.ghostButton}
-                            type="button"
-                            onClick={() =>
-                              setExpandedLadders((prev) => ({
-                                ...prev,
-                                [tour.name]: !prev[tour.name],
-                              }))
-                            }
-                          >
-                            {showAll ? 'collapse' : 'view all placements'}
-                          </button>
-                        )}
-                      </div>
+                {tournaments.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <div className={styles.emptyTitle}>you&apos;re not in any tournaments</div>
+                    <div className={styles.emptySub}>
+                      Join a ladder or host your own to start competing again.
                     </div>
-                  )
-                })}
+                  </div>
+                ) : (
+                  tournaments.map((tour) => {
+                    const entries = ladderEntries[tour.name] ?? []
+                    const showAll = expandedLadders[tour.name]
+                    const visibleEntries = showAll ? entries : entries.slice(0, 5)
+
+                    return (
+                      <div key={tour.name} className={styles.standingCard}>
+                        <div className={styles.standingTop}>
+                          <div>
+                            <div className={styles.tourName}>{tour.name}</div>
+                          </div>
+                          <div className={styles.metaPills}>
+                            <span className={styles.metaChip}>{tour.totalPlayers} players</span>
+                            <span className={styles.metaChip}>{tour.streak}</span>
+                            <span
+                              className={`${styles.metaChip} ${
+                                tour.trend === 'up' ? styles.momentumPositive : styles.momentumNegative
+                              }`}
+                            >
+                              {tour.momentum}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className={styles.topFiveList}>
+                          {visibleEntries.map((entry) => (
+                            <div
+                              key={`${tour.name}-${entry.rank}-${entry.name}`}
+                              className={`${styles.topRow} ${entry.isYou ? styles.ladderHighlight : ''}`}
+                            >
+                              <span className={styles.rank}>#{entry.rank}</span>
+                              <div className={styles.playerInfo}>
+                                <span className={styles.avatar}>{getInitials(entry.name)}</span>
+                                <div className={styles.playerText}>
+                                  <div className={styles.playerName}>{entry.name}</div>
+                                  <div className={styles.playerSub}>{entry.solvedToday} solved today</div>
+                                </div>
+                              </div>
+                              <div className={styles.points}>{entry.points} pts</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className={styles.cardActions}>
+                          <div className={styles.statSub}>
+                            {showAll
+                              ? `Showing all ${entries.length} placements.`
+                              : `Showing top ${visibleEntries.length} of ${tour.totalPlayers}.`}
+                          </div>
+                          <div className={styles.cardActionButtons}>
+                            <button
+                              className={styles.leaveButton}
+                              type="button"
+                              onClick={() => handleLeave(tour.name)}
+                            >
+                              leave tournament
+                            </button>
+                            {entries.length > 5 && (
+                              <button
+                                className={styles.ghostButton}
+                                type="button"
+                                onClick={() =>
+                                  setExpandedLadders((prev) => ({
+                                    ...prev,
+                                    [tour.name]: !prev[tour.name],
+                                  }))
+                                }
+                              >
+                                {showAll ? 'collapse' : 'view all placements'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
               </div>
             </section>
           </div>

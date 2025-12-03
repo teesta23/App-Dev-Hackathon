@@ -1,12 +1,15 @@
 .page {
   display: flex;
+  align-items: flex-start;
   min-height: 100vh;
   background: linear-gradient(180deg, #f5edff 0%, #efe6ff 48%, #ebdeff 100%);
   color: #53377a;
   font-family: 'Inter', sans-serif;
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
+  padding-left: 248px;
 }
 
 .page::before,
@@ -317,6 +320,22 @@
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
+.leaveButton {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff5f6;
+  color: #c63c50;
+  font-weight: 800;
+  border: 1px solid #f2cbd2;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.leaveButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 18px rgba(198, 60, 80, 0.16);
+}
+
 .ghostButton:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 18px rgba(123, 69, 201, 0.18);
@@ -394,6 +413,14 @@
   justify-content: space-between;
   gap: 10px;
   margin-top: 4px;
+}
+
+.cardActionButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .sideColumn {
@@ -594,6 +621,28 @@
 .ladderHighlight {
   background: #e9dbff;
   color: #4d2f71;
+}
+
+.emptyState {
+  border: 1px dashed #ddceff;
+  background: #f9f4ff;
+  padding: 16px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #6b3f9d;
+  font-weight: 700;
+}
+
+.emptyTitle {
+  font-weight: 800;
+}
+
+.emptySub {
+  color: #7c679a;
+  font-weight: 700;
+  font-size: 13px;
 }
 
 @media (max-width: 1100px) {
