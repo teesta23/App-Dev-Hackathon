@@ -7,9 +7,10 @@ type SettingsProps = {
   onLogout?: () => void
   onGoToSupport?: () => void
   onGoToTournaments?: () => void
+  onGoToLessons?: () => void
 }
 
-function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments }: SettingsProps) {
+function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments, onGoToLessons }: SettingsProps) {
   const [username, setUsername] = useState('John Smith')
   const [leetcodeHandle, setLeetcodeHandle] = useState('john_smith')
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -49,7 +50,13 @@ function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments }: Settin
           <span className={`${homeStyles.icon} ${homeStyles['icon-home']}`} />
           Home
         </button>
-        <button className={homeStyles.navItem} type="button">
+        <button
+          className={homeStyles.navItem}
+          type="button"
+          onClick={() => {
+            onGoToLessons?.()
+          }}
+        >
           <span className={`${homeStyles.icon} ${homeStyles['icon-bookmark']}`} />
           Learn
         </button>
@@ -106,7 +113,9 @@ function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments }: Settin
         <div className={styles.headerRow}>
           <div className={styles.headerCopy}>
             <p className={styles.kicker}>profile center</p>
-            <h1 className={styles.title}>settings</h1>
+            <h1 className={styles.title}>
+              profile <span className={styles.titleAccent}>[settings]</span>
+            </h1>
             <p className={styles.subtitle}>
               Update the essentials: your username, your picture, and the LeetCode account tied to your crew.
             </p>

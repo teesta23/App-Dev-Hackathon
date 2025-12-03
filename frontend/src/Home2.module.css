@@ -73,7 +73,7 @@
 .content {
   flex: 1;
   position: relative;
-  padding: 170px 44px 36px;
+  padding: 140px 32px 28px;
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -158,6 +158,7 @@ line-height: 92%; /* 16.56px */
   padding: 0;
   justify-items: center;
   text-align: center;
+  margin-top: 24px;
 }
 .sectionTitleTour {
   font-family: Almarai;
@@ -186,10 +187,25 @@ background-clip: text;
 .sectionTitle {
   justify-self: center;
 }
+.lessonsHeading {
+  font-family: Almarai, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 1.2px;
+  background: linear-gradient(180deg, #E854FF -47.3%, #5A50E8 140.53%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-transform: lowercase;
+  text-align: center;
+  margin-bottom: 8px;
+}
 .mainPanels {
   display: flex;
-  gap: 36px;
-  align-items: stretch;
+  gap: 32px;
+  align-items: center;
+  padding-top: 6px;
 }
 .tournamentShell {
   flex: 1;
@@ -314,44 +330,115 @@ letter-spacing: 0.4px;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 .lessonsColumn {
-  width: 210px;
+  width: 200px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding-top: 8px;
+  gap: 8px;
+  padding-top: 0;
 }
 .lessonCard {
-  width: 140px;
-  height: 150px;
+  width: 180px;
+  min-height: 132px;
   border-radius: 12px;
   background: #f7f3ff;
   box-shadow: 0 12px 24px rgba(109, 71, 163, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.6);
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.lessonsArrow {
-  width: 2px;
-  height: 28px;
-  background: linear-gradient(180deg, #b678ff 0%, #8d60d8 100%);
-  position: relative;
+.lessonLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: #e8daff;
+  color: #6c3f9e;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
-.lessonsArrow::after {
-  content: '';
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  width: 10px;
-  height: 10px;
-  border-left: 2px solid #8d60d8;
-  border-bottom: 2px solid #8d60d8;
-  transform: translateX(-50%) rotate(-45deg);
+.lessonTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: #5c347f;
+  line-height: 1.2;
+}
+.lessonMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #6a4f8f;
+  font-weight: 700;
+  font-size: 13px;
+}
+.lessonMeta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lessonStatus {
+  align-self: flex-start;
+  padding: 6px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  background: #e8daff;
+  color: #6c3f9e;
+}
+.lessonStatus.current {
+  background: #d6c7ff;
+  color: #503788;
+}
+.lessonStatus.locked {
+  background: #f0e7ff;
+  color: #8a78b8;
+}
+.lessonStatus.done {
+  background: #d9f3e6;
+  color: #2b8158;
+}
+.lessonEmpty {
+  color: #6a4f8f;
+  font-weight: 700;
+  font-size: 13px;
+}
+.lessonButton {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(147deg, #b84cf6 10.41%, #6a4cf6 88.38%);
+  box-shadow: 0 10px 18px rgba(123, 69, 201, 0.3);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: lowercase;
+  cursor: pointer;
+  border: none;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.lessonButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px rgba(123, 69, 201, 0.34);
+}
+.lessonButton {
+  margin-top: 12px;
 }
 .actions {
-  display: grid;
-  grid-template-columns: 1fr 210px;
-  gap: 36px;
+  display: flex;
+  gap: 16px;
   align-items: center;
-  justify-items: center;
+  justify-content: center;
   margin-top: 12px;
 }
 .primaryButton {
@@ -498,10 +585,15 @@ box-shadow: 0 0 50px 0 rgba(106, 74, 142, 0.20);
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: rgba(83, 55, 122, 0.08);
+  background: linear-gradient(145deg, #d8b5ff 0%, #7b4daf 100%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: #f4ebff;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  box-shadow: 0 10px 24px rgba(83, 55, 122, 0.28);
 }
 .topbarAvatar .icon-pfp {
   width: 48px;

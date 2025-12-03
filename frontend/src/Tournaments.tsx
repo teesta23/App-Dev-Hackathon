@@ -6,6 +6,7 @@ type TournamentsProps = {
   onBackToDashboard?: () => void
   onGoToContact?: () => void
   onGoToSettings?: () => void
+  onGoToLessons?: () => void
   onLogout?: () => void
 }
 
@@ -90,7 +91,7 @@ const ladderByName: Record<
   ],
 }
 
-function Tournaments({ onBackToDashboard, onGoToContact, onGoToSettings, onLogout }: TournamentsProps) {
+function Tournaments({ onBackToDashboard, onGoToContact, onGoToSettings, onGoToLessons, onLogout }: TournamentsProps) {
   const [expandedLadders, setExpandedLadders] = useState<Record<string, boolean>>({})
 
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
@@ -143,7 +144,13 @@ function Tournaments({ onBackToDashboard, onGoToContact, onGoToSettings, onLogou
             <span className={`${homeStyles.icon} ${homeStyles['icon-home']}`} />
             Home
           </button>
-          <button className={homeStyles.navItem} type="button">
+          <button
+            className={homeStyles.navItem}
+            type="button"
+            onClick={() => {
+              onGoToLessons?.()
+            }}
+          >
             <span className={`${homeStyles.icon} ${homeStyles['icon-bookmark']}`} />
             Learn
           </button>
@@ -200,7 +207,9 @@ function Tournaments({ onBackToDashboard, onGoToContact, onGoToSettings, onLogou
 
           <div className={styles.headerCopy}>
             <p className={styles.kicker}>tournaments</p>
-            <h1 className={styles.title}>build your streak and rally your crew.</h1>
+            <h1 className={styles.title}>
+              <span className={styles.titleAccent}>[tournaments]</span> rally your crew and build your streak
+            </h1>
             <p className={styles.subtitle}>
               Create or join a ladder, keep tabs on every bracket you’re in, and spend points on streak saves
               when life gets in the way.

@@ -1,13 +1,50 @@
 import styles from './Home2.module.css'
 
 type Home2Props = {
+  skillLevel?: SkillLevelOption | null
   onGoToContact?: () => void
   onGoToSettings?: () => void
   onGoToTournaments?: () => void
+  onGoToLessons?: () => void
   onLogout?: () => void
 }
 
-function Home2({ onGoToContact, onGoToSettings, onGoToTournaments, onLogout }: Home2Props) {
+function Home2({ skillLevel, onGoToContact, onGoToSettings, onGoToTournaments, onGoToLessons, onLogout }: Home2Props) {
+  const profileName = 'John Smith'
+  const profileInitials = profileName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+
+  const activeLevel: SkillLevelOption = skillLevel ?? 'intermediate'
+  const track = tracks[activeLevel]
+
+  const firstPendingIndex = track.nodes.findIndex((node) => node.status !== 'done')
+  const currentIndex = track.nodes.findIndex((node) => node.status === 'current')
+  const resolvedCurrentIndex = currentIndex >= 0 ? currentIndex : firstPendingIndex >= 0 ? firstPendingIndex : 0
+  const currentLesson = track.nodes[resolvedCurrentIndex] as LessonNode | undefined
+  const renderLessonCard = (label: string, lesson?: LessonNode) => (
+    <div className={styles.lessonCard}>
+      <div className={styles.lessonLabel}>{label}</div>
+      {lesson ? (
+        <>
+          <div className={styles.lessonTitle}>{lesson.title}</div>
+          <div className={styles.lessonMeta}>
+            <span>{lesson.focus}</span>
+            <span>{lesson.duration}</span>
+            <span>{lesson.points} pts</span>
+          </div>
+          <div className={`${styles.lessonStatus} ${styles[lesson.status]}`}>{lesson.status}</div>
+        </>
+      ) : (
+        <div className={styles.lessonEmpty}>No lesson queued</div>
+      )}
+    </div>
+  )
+
   return (
     <div className={styles.page}>
       <aside className={styles.nav}>
@@ -18,7 +55,14 @@ function Home2({ onGoToContact, onGoToSettings, onGoToTournaments, onLogout }: H
             <span className={`${styles.icon} ${styles['icon-home']}`} />
             Home
           </a>
-          <a className={styles.navItem} href="#">
+          <a
+            className={styles.navItem}
+            href="#"
+            onClick={(event) => {
+              event.preventDefault()
+              onGoToLessons?.()
+            }}
+          >
             <span className={`${styles.icon} ${styles['icon-bookmark']}`} />
             Learn
           </a>
@@ -80,10 +124,10 @@ function Home2({ onGoToContact, onGoToSettings, onGoToTournaments, onLogout }: H
           <div className={styles.topbarContent}>
             <div className={styles.topbarProfile}>
               <div className={styles.topbarAvatar}>
-                <span className={`${styles.icon} ${styles['icon-pfp']}`} />
+                {profileInitials}
               </div>
               <div className={styles.profileInfo}>
-                <div className={styles.profileName}>John Smith</div>
+                <div className={styles.profileName}>{profileName}</div>
               </div>
             </div>
 
@@ -96,7 +140,7 @@ function Home2({ onGoToContact, onGoToSettings, onGoToTournaments, onLogout }: H
 
         <div className={styles.sectionHeaders}>
           <div className={styles.sectionTitleTour}>[this week’s tournaments]</div>
-          <div className={styles.sectionTitleLes}>[next lessons]</div>
+          <div />
         </div>
 
         <div className={styles.mainPanels}>
@@ -144,20 +188,33 @@ function Home2({ onGoToContact, onGoToSettings, onGoToTournaments, onLogout }: H
           </div>
 
           <div className={styles.lessonsColumn}>
-            <div className={styles.lessonCard} />
-            <div className={styles.lessonsArrow} />
-            <div className={styles.lessonCard} />
+            <div className={styles.lessonsHeading}>[current lesson]</div>
+            {renderLessonCard('current lesson', currentLesson)}
+            <button
+              className={styles.lessonButton}
+              onClick={(event) => {
+                event.preventDefault()
+                onGoToLessons?.()
+              }}
+              type="button"
+            >
+              <span className={styles.arrowText}>&gt;</span>
+              all lessons
+            </button>
           </div>
         </div>
 
         <div className={styles.actions}>
-          <button className={styles.primaryButton}>
+          <button
+            className={styles.primaryButton}
+            onClick={(event) => {
+              event.preventDefault()
+              onGoToTournaments?.()
+            }}
+            type="button"
+          >
             <span className={styles.arrowText}>&gt;</span>
             view all
-          </button>
-          <button className={styles.primaryButton}>
-            <span className={styles.arrowText}>&gt;</span>
-            all lessons
           </button>
         </div>
       </main>
@@ -166,3 +223,5 @@ function Home2({ onGoToContact, onGoToSettings, onGoToTournaments, onLogout }: H
 }
 
 export default Home2
+import { tracks, type LessonNode } from './Lessons.tsx'
+import type { SkillLevelOption } from './SkillLevel.tsx'

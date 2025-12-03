@@ -8,9 +8,10 @@ type ContactProps = {
   onLogout?: () => void
   onGoToSettings?: () => void
   onGoToTournaments?: () => void
+  onGoToLessons?: () => void
 }
 
-function Contact({ variant, onBack, onLogout, onGoToSettings, onGoToTournaments }: ContactProps) {
+function Contact({ variant, onBack, onLogout, onGoToSettings, onGoToTournaments, onGoToLessons }: ContactProps) {
   const isDashboard = variant === 'dashboard'
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -26,10 +27,16 @@ function Contact({ variant, onBack, onLogout, onGoToSettings, onGoToTournaments 
           <span className={`${homeStyles.icon} ${homeStyles['icon-home']}`} />
           Home
         </button>
-          <button className={homeStyles.navItem} type="button">
-            <span className={`${homeStyles.icon} ${homeStyles['icon-bookmark']}`} />
-            Learn
-          </button>
+        <button
+          className={homeStyles.navItem}
+          type="button"
+          onClick={() => {
+            onGoToLessons?.()
+          }}
+        >
+          <span className={`${homeStyles.icon} ${homeStyles['icon-bookmark']}`} />
+          Learn
+        </button>
           <button
             className={homeStyles.navItem}
             type="button"
@@ -92,7 +99,9 @@ function Contact({ variant, onBack, onLogout, onGoToSettings, onGoToTournaments 
         <div className={styles.headerBlock}>
           <div className={styles.headerCopy}>
             <p className={styles.kicker}>need a hand?</p>
-            <h1 className={styles.title}>contact our crew</h1>
+            <h1 className={styles.title}>
+              contact our <span className={styles.titleAccent}>[support]</span>
+            </h1>
             <p className={styles.subtitle}>
               Reach out about tournaments, lessons, or any issues you're facing. We respond fast.
             </p>

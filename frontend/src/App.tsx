@@ -3,6 +3,7 @@ import './App.css'
 import Contact from './Contact.tsx'
 import Home2 from './Home2.tsx'
 import LinkLeetcode from './LinkLeetcode.tsx'
+import Lessons from './Lessons.tsx'
 import Login from './Login.tsx'
 import Settings from './Settings.tsx'
 import Signup from './Signup.tsx'
@@ -21,16 +22,31 @@ function App() {
     | 'contactDashboard'
     | 'settings'
     | 'tournaments'
+    | 'lessons'
   >('landing')
-  const [, setSkillLevel] = useState<SkillLevelOption | null>(null)
+  const [skillLevel, setSkillLevel] = useState<SkillLevelOption | null>(null)
   const [, setLeetcodeUsername] = useState<string>('')
 
   if (view === 'dashboard') {
     return (
       <Home2
+        skillLevel={skillLevel}
         onGoToContact={() => setView('contactDashboard')}
         onGoToSettings={() => setView('settings')}
         onGoToTournaments={() => setView('tournaments')}
+        onGoToLessons={() => setView('lessons')}
+        onLogout={() => setView('landing')}
+      />
+    )
+  }
+  if (view === 'lessons') {
+    return (
+      <Lessons
+        skillLevel={skillLevel}
+        onBackToDashboard={() => setView('dashboard')}
+        onGoToTournaments={() => setView('tournaments')}
+        onGoToContact={() => setView('contactDashboard')}
+        onGoToSettings={() => setView('settings')}
         onLogout={() => setView('landing')}
       />
     )
@@ -41,6 +57,7 @@ function App() {
         onBackToDashboard={() => setView('dashboard')}
         onGoToContact={() => setView('contactDashboard')}
         onGoToSettings={() => setView('settings')}
+        onGoToLessons={() => setView('lessons')}
         onLogout={() => setView('landing')}
       />
     )
@@ -54,6 +71,7 @@ function App() {
         onLogout={() => setView('landing')}
         onGoToSettings={() => setView('settings')}
         onGoToTournaments={() => setView('tournaments')}
+        onGoToLessons={() => setView('lessons')}
       />
     )
   }
@@ -64,6 +82,7 @@ function App() {
         onLogout={() => setView('landing')}
         onGoToSupport={() => setView('contactDashboard')}
         onGoToTournaments={() => setView('tournaments')}
+        onGoToLessons={() => setView('lessons')}
       />
     )
   }
@@ -103,7 +122,7 @@ function App() {
         onBack={() => setView('link')}
         onContinue={(level) => {
           setSkillLevel(level)
-          setView('dashboard')
+          setView('lessons')
         }}
       />
     )
