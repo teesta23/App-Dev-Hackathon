@@ -7,9 +7,10 @@ type ContactProps = {
   onBack?: () => void
   onLogout?: () => void
   onGoToSettings?: () => void
+  onGoToTournaments?: () => void
 }
 
-function Contact({ variant, onBack, onLogout, onGoToSettings }: ContactProps) {
+function Contact({ variant, onBack, onLogout, onGoToSettings, onGoToTournaments }: ContactProps) {
   const isDashboard = variant === 'dashboard'
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -25,14 +26,20 @@ function Contact({ variant, onBack, onLogout, onGoToSettings }: ContactProps) {
           <span className={`${homeStyles.icon} ${homeStyles['icon-home']}`} />
           Home
         </button>
-        <button className={homeStyles.navItem} type="button">
-          <span className={`${homeStyles.icon} ${homeStyles['icon-bookmark']}`} />
-          Learn
-        </button>
-        <button className={homeStyles.navItem} type="button">
-          <span className={`${homeStyles.icon} ${homeStyles['icon-calendar']}`} />
-          Tournaments
-        </button>
+          <button className={homeStyles.navItem} type="button">
+            <span className={`${homeStyles.icon} ${homeStyles['icon-bookmark']}`} />
+            Learn
+          </button>
+          <button
+            className={homeStyles.navItem}
+            type="button"
+            onClick={() => {
+              onGoToTournaments?.()
+            }}
+          >
+            <span className={`${homeStyles.icon} ${homeStyles['icon-calendar']}`} />
+            Tournaments
+          </button>
         <button className={homeStyles.navItem} type="button">
           <span className={`${homeStyles.icon} ${homeStyles['icon-user']}`} />
           My Room

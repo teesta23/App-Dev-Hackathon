@@ -7,6 +7,7 @@ import Login from './Login.tsx'
 import Settings from './Settings.tsx'
 import Signup from './Signup.tsx'
 import SkillLevel, { type SkillLevelOption } from './SkillLevel.tsx'
+import Tournaments from './Tournaments.tsx'
 
 function App() {
   const [view, setView] = useState<
@@ -19,6 +20,7 @@ function App() {
     | 'contactLanding'
     | 'contactDashboard'
     | 'settings'
+    | 'tournaments'
   >('landing')
   const [, setSkillLevel] = useState<SkillLevelOption | null>(null)
   const [, setLeetcodeUsername] = useState<string>('')
@@ -26,6 +28,17 @@ function App() {
   if (view === 'dashboard') {
     return (
       <Home2
+        onGoToContact={() => setView('contactDashboard')}
+        onGoToSettings={() => setView('settings')}
+        onGoToTournaments={() => setView('tournaments')}
+        onLogout={() => setView('landing')}
+      />
+    )
+  }
+  if (view === 'tournaments') {
+    return (
+      <Tournaments
+        onBackToDashboard={() => setView('dashboard')}
         onGoToContact={() => setView('contactDashboard')}
         onGoToSettings={() => setView('settings')}
         onLogout={() => setView('landing')}
@@ -40,6 +53,7 @@ function App() {
         onBack={() => setView('dashboard')}
         onLogout={() => setView('landing')}
         onGoToSettings={() => setView('settings')}
+        onGoToTournaments={() => setView('tournaments')}
       />
     )
   }
@@ -49,6 +63,7 @@ function App() {
         onBack={() => setView('dashboard')}
         onLogout={() => setView('landing')}
         onGoToSupport={() => setView('contactDashboard')}
+        onGoToTournaments={() => setView('tournaments')}
       />
     )
   }

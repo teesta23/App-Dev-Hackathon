@@ -42,7 +42,7 @@ function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
         <section className={styles.pitch}>
           <div className={styles.stepPill}>step 2 · connect leetcode</div>
           <h1 className={styles.title}>
-            link your <span className={styles.titleAccent}>leetcode handle</span>
+            link your <span className={styles.titleAccent}>[leetcode handle]</span>
           </h1>
           <p className={styles.copy}>
             Add your username so we can sync your solved count and keep your stats current. We only read public data.

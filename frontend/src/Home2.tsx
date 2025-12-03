@@ -3,10 +3,11 @@ import styles from './Home2.module.css'
 type Home2Props = {
   onGoToContact?: () => void
   onGoToSettings?: () => void
+  onGoToTournaments?: () => void
   onLogout?: () => void
 }
 
-function Home2({ onGoToContact, onGoToSettings, onLogout }: Home2Props) {
+function Home2({ onGoToContact, onGoToSettings, onGoToTournaments, onLogout }: Home2Props) {
   return (
     <div className={styles.page}>
       <aside className={styles.nav}>
@@ -21,7 +22,14 @@ function Home2({ onGoToContact, onGoToSettings, onLogout }: Home2Props) {
             <span className={`${styles.icon} ${styles['icon-bookmark']}`} />
             Learn
           </a>
-          <a className={styles.navItem} href="#">
+          <a
+            className={styles.navItem}
+            href="#"
+            onClick={(event) => {
+              event.preventDefault()
+              onGoToTournaments?.()
+            }}
+          >
             <span className={`${styles.icon} ${styles['icon-calendar']}`} />
             Tournaments
           </a>
