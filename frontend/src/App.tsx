@@ -3,9 +3,11 @@ import './App.css'
 import Home2 from './Home2.tsx'
 import Login from './Login.tsx'
 import Signup from './Signup.tsx'
+import SkillLevel, { type SkillLevelOption } from './SkillLevel.tsx'
 
 function App() {
-  const [view, setView] = useState<'landing' | 'login' | 'signup' | 'dashboard'>('landing')
+  const [view, setView] = useState<'landing' | 'login' | 'signup' | 'skill' | 'dashboard'>('landing')
+  const [, setSkillLevel] = useState<SkillLevelOption | null>(null)
 
   if (view === 'dashboard') return <Home2 />
   if (view === 'login') {
@@ -21,8 +23,19 @@ function App() {
     return (
       <Signup
         onBack={() => setView('landing')}
-        onCreate={() => setView('dashboard')}
+        onCreate={() => setView('skill')}
         onLogin={() => setView('login')}
+      />
+    )
+  }
+  if (view === 'skill') {
+    return (
+      <SkillLevel
+        onBack={() => setView('signup')}
+        onContinue={(level) => {
+          setSkillLevel(level)
+          setView('dashboard')
+        }}
       />
     )
   }
