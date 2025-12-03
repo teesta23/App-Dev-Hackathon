@@ -1,4 +1,5 @@
 .page {
+  --sidebar-width: clamp(200px, 22vw, 248px);
   display: flex;
   align-items: flex-start;
   min-height: 100vh;
@@ -9,7 +10,7 @@
   isolation: isolate;
   overflow-x: hidden;
   overflow-y: visible;
-  padding-left: 248px;
+  padding-left: var(--sidebar-width);
 }
 
 .page::before,
@@ -49,6 +50,7 @@
   gap: 22px;
   position: relative;
   z-index: 1;
+  min-width: 0;
 }
 
 .headerRow {
@@ -645,6 +647,12 @@
   font-size: 13px;
 }
 
+@media (max-width: 1200px) {
+  .content {
+    padding: 36px 24px;
+  }
+}
+
 @media (max-width: 1100px) {
   .mainGrid {
     grid-template-columns: 1fr;
@@ -652,6 +660,10 @@
 
   .headerRow {
     grid-template-columns: 1fr;
+  }
+
+  .content {
+    padding: 30px 22px;
   }
 }
 
@@ -670,5 +682,10 @@
 
   .panel {
     padding: 16px;
+  }
+
+  .headerCopy .title {
+    font-size: 36px;
+    line-height: 1.1;
   }
 }

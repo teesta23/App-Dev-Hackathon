@@ -1,11 +1,12 @@
 .page {
+  --sidebar-width: clamp(200px, 22vw, 248px);
   display: flex;
   align-items: flex-start;
   min-height: 100vh;
   background: linear-gradient(180deg, #f5edff 0%, #efe6ff 48%, #ebdeff 100%);
   color: #53377a;
   font-family: 'Inter', sans-serif;
-  padding-left: 248px;
+  padding-left: var(--sidebar-width);
 }
 .nav {
   position: fixed;
@@ -14,8 +15,9 @@
   height: 100vh;
   max-height: 100vh;
   overflow-y: auto;
-  width: 248px;
-  flex: 0 0 248px;
+  width: var(--sidebar-width);
+  max-width: 100%;
+  flex: 0 0 var(--sidebar-width);
   box-sizing: border-box;
   align-self: flex-start;
   z-index: 10;
@@ -89,9 +91,11 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
+  min-width: 0;
 }
 .topRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.9fr);
   gap: 24px;
   align-items: stretch;
   position: relative;
@@ -135,6 +139,7 @@ letter-spacing: 0.68px;
 }
 .pointsCard {
   min-width: 220px;
+  width: 100%;
   padding: 18px 24px;
   border-radius: 20px;
   background: linear-gradient(135deg, #d09bff 0%, #c184ff 100%);
@@ -164,13 +169,14 @@ line-height: 92%; /* 16.56px */
 }
 .sectionHeaders {
   display: grid;
-  grid-template-columns: 1fr 210px;
-  gap: 36px;
-  align-items: flex-end;
-  padding: 0;
+  grid-template-columns: minmax(0, 1.7fr) minmax(220px, 0.9fr);
+  align-items: end;
   justify-items: center;
+  gap: 32px;
+  padding: 0;
   text-align: center;
   margin-top: 24px;
+  width: 100%;
 }
 .sectionTitleTour {
   font-family: Almarai;
@@ -214,14 +220,16 @@ background-clip: text;
   margin-bottom: 8px;
 }
 .mainPanels {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(220px, 0.9fr);
   gap: 32px;
-  align-items: center;
+  align-items: stretch;
   padding-top: 6px;
+  width: 100%;
 }
 .tournamentShell {
-  flex: 1;
-  max-width: 760px;
+  width: 100%;
+  min-width: 0;
   padding: 0;
   border-radius: 0;
   border: none;
@@ -231,7 +239,6 @@ background-clip: text;
 }
 .tournamentCard {
   flex: 1;
-  max-width: 760px;
   position: relative;
   background: #ffffff;
   border-radius: 20px;
@@ -266,6 +273,7 @@ letter-spacing: 0.4px;
   flex-direction: column;
   flex: 1 1 auto;
   background: #ffffff;
+  overflow-x: auto;
 }
 .tableHead {
   background: transparent;
@@ -342,15 +350,17 @@ letter-spacing: 0.4px;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 .lessonsColumn {
-  width: 200px;
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
   padding-top: 0;
 }
 .lessonCard {
-  width: 180px;
+  width: clamp(220px, 45vw, 640px);
+  max-width: 100%;
   min-height: 132px;
   border-radius: 12px;
   background: #f7f3ff;
@@ -403,10 +413,12 @@ letter-spacing: 0.4px;
   letter-spacing: 0.6px;
   background: #e8daff;
   color: #6c3f9e;
+  transition: transform 120ms ease;
 }
 .lessonStatus.current {
   background: #d6c7ff;
   color: #503788;
+  transform: scale(1.08);
 }
 .lessonStatus.locked {
   background: #f0e7ff;
@@ -422,12 +434,12 @@ letter-spacing: 0.4px;
   font-size: 13px;
 }
 .lessonButton {
-  width: 100%;
+  width: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 12px 22px;
   border-radius: 12px;
   background: linear-gradient(147deg, #b84cf6 10.41%, #6a4cf6 88.38%);
   box-shadow: 0 10px 18px rgba(123, 69, 201, 0.3);
@@ -440,18 +452,20 @@ letter-spacing: 0.4px;
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 .lessonButton:hover {
-  transform: translateY(-1px);
+  transform: scale(1.08);
   box-shadow: 0 12px 20px rgba(123, 69, 201, 0.34);
 }
 .lessonButton {
   margin-top: 12px;
 }
 .actions {
-  display: flex;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(220px, 0.9fr);
+  gap: 32px;
   align-items: center;
-  justify-content: center;
+  justify-items: center;
   margin-top: 12px;
+  width: 100%;
 }
 .primaryButton {
   display: inline-flex;
@@ -629,4 +643,96 @@ line-height: 92%; /* 33.12px */
 }
 .topbar .profileInfo {
   align-items: flex-start;
+}
+
+@media (max-width: 1200px) {
+  .page {
+    padding-left: var(--sidebar-width);
+  }
+
+  .topRow {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionHeaders {
+    align-items: center;
+    text-align: center;
+  }
+
+  .mainPanels {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 1024px) {
+  .page {
+    padding-left: var(--sidebar-width);
+    gap: 16px;
+  }
+
+  .content {
+    padding: 110px 18px 24px;
+  }
+
+  .topRow {
+    grid-template-columns: 1fr;
+  }
+
+  .mainPanels {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .tournamentShell {
+    max-width: none;
+  }
+
+  .tableWrapper {
+    border-radius: 18px;
+  }
+
+  .lessonsColumn {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .lessonCard,
+  .lessonButton {
+    width: min(100%, 320px);
+  }
+
+  .actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 720px) {
+  .content {
+    padding: 82px 14px 18px;
+  }
+
+  .tableRow {
+    min-width: 480px;
+  }
+
+  .topbarProfile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .topbarPoints {
+    align-items: center;
+  }
+
+  .tournamentCard {
+    border-radius: 16px;
+  }
+
+  .lessonCard {
+    max-width: none;
+  }
 }

@@ -6,13 +6,14 @@
 }
 
 .dashboardPage {
+  --sidebar-width: clamp(200px, 22vw, 248px);
   background: linear-gradient(180deg, #f5edff 0%, #efe6ff 48%, #ebdeff 100%);
   color: #53377a;
   position: relative;
   overflow-x: hidden;
   overflow-y: visible;
   isolation: isolate;
-  padding-left: 248px;
+  padding-left: var(--sidebar-width);
 }
 
 .dashboardPage::before,
@@ -92,6 +93,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
 }
 
 .contentDashboard {
@@ -616,6 +618,10 @@
 }
 
 @media (max-width: 1080px) {
+  .dashboardPage {
+    padding-left: var(--sidebar-width);
+  }
+
   .headerBlock {
     grid-template-columns: 1fr;
   }

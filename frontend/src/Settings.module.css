@@ -1,4 +1,5 @@
 .page {
+  --sidebar-width: clamp(200px, 22vw, 248px);
   display: flex;
   align-items: flex-start;
   min-height: 100vh;
@@ -9,7 +10,7 @@
   overflow-y: visible;
   position: relative;
   isolation: isolate;
-  padding-left: 248px;
+  padding-left: var(--sidebar-width);
 }
 
 .page::before,
@@ -50,6 +51,7 @@
   min-height: 100vh;
   position: relative;
   z-index: 1;
+  min-width: 0;
 }
 
 .headerRow {
@@ -356,6 +358,10 @@
 }
 
 @media (max-width: 1080px) {
+  .page {
+    padding-left: var(--sidebar-width);
+  }
+
   .content {
     padding: 32px 24px;
   }

@@ -306,3 +306,33 @@ background-clip: text;
     height: 160px;
   }
 }
+
+@media (max-width: 540px) {
+  .page {
+    padding: 20px 18px 60px;
+  }
+
+  .brand {
+    font-size: 36px;
+  }
+
+  .title-main,
+  .title-accent {
+    font-size: 72px;
+    letter-spacing: 2px;
+  }
+
+  .feature-title {
+    font-size: 30px;
+  }
+
+  .feature-row {
+    gap: 16px;
+  }
+
+  .feature-graphic {
+    width: 140px;
+    height: 140px;
+    border-radius: 28px;
+  }
+}
