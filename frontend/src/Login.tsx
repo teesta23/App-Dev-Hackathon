@@ -38,7 +38,7 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
           </p>
           <div className={styles.badges}>
             <div className={styles.badge}>secure sessions</div>
-            <div className={styles.badge}>team insights</div>
+            <div className={styles.badge}>intuitive tournaments</div>
             <div className={styles.badge}>instant sync</div>
           </div>
         </section>

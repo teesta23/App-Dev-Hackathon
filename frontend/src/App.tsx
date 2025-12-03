@@ -3,11 +3,13 @@ import './App.css'
 import Home2 from './Home2.tsx'
 import Login from './Login.tsx'
 import Signup from './Signup.tsx'
+import LinkLeetcode from './LinkLeetcode.tsx'
 import SkillLevel, { type SkillLevelOption } from './SkillLevel.tsx'
 
 function App() {
-  const [view, setView] = useState<'landing' | 'login' | 'signup' | 'skill' | 'dashboard'>('landing')
+  const [view, setView] = useState<'landing' | 'login' | 'signup' | 'link' | 'skill' | 'dashboard'>('landing')
   const [, setSkillLevel] = useState<SkillLevelOption | null>(null)
+  const [, setLeetcodeUsername] = useState<string>('')
 
   if (view === 'dashboard') return <Home2 />
   if (view === 'login') {
@@ -23,15 +25,27 @@ function App() {
     return (
       <Signup
         onBack={() => setView('landing')}
-        onCreate={() => setView('skill')}
+        onCreate={() => setView('link')}
         onLogin={() => setView('login')}
+      />
+    )
+  }
+  if (view === 'link') {
+    return (
+      <LinkLeetcode
+        onBack={() => setView('signup')}
+        onSkip={() => setView('skill')}
+        onContinue={(username) => {
+          setLeetcodeUsername(username)
+          setView('skill')
+        }}
       />
     )
   }
   if (view === 'skill') {
     return (
       <SkillLevel
-        onBack={() => setView('signup')}
+        onBack={() => setView('link')}
         onContinue={(level) => {
           setSkillLevel(level)
           setView('dashboard')

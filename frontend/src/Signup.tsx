@@ -37,7 +37,7 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
             Build your leeterboard profile, invite teammates, and join tournaments with one shared streak.
           </p>
           <div className={styles.badges}>
-            <div className={styles.badge}>team-ready</div>
+            <div className={styles.badge}>tournament-ready</div>
             <div className={styles.badge}>sync rewards</div>
             <div className={styles.badge}>instant access</div>
           </div>

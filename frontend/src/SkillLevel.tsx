@@ -66,12 +66,12 @@ function SkillLevel({ onBack, onContinue }: SkillLevelProps) {
 
       <main className={styles.shell}>
         <section className={styles.pitch}>
-          <div className={styles.stepPill}>step 2 · choose your lane</div>
+          <div className={styles.stepPill}>step 3 · choose your lane</div>
           <h1 className={styles.title}>
             set your <span className={styles.titleAccent}>skill level</span>
           </h1>
           <p className={styles.copy}>
-            Tailor lessons, streak goals, and tournaments to match where you are today. This choice locks in your starting track.
+            We use this to shape your lesson path from day one. This choice locks in your starting track.
           </p>
         </section>
 
