@@ -1,6 +1,11 @@
 import styles from './Home2.module.css'
 
-function Home2() {
+type Home2Props = {
+  onGoToContact?: () => void
+  onLogout?: () => void
+}
+
+function Home2({ onGoToContact, onLogout }: Home2Props) {
   return (
     <div className={styles.page}>
       <aside className={styles.nav}>
@@ -26,7 +31,14 @@ function Home2() {
         </div>
 
         <div className={styles.footerMenu}>
-          <a className={styles.navItem} href="#">
+          <a
+            className={styles.navItem}
+            href="#"
+            onClick={(event) => {
+              event.preventDefault()
+              onGoToContact?.()
+            }}
+          >
             <span className={`${styles.icon} ${styles['icon-chat']}`} />
             support
           </a>
@@ -34,7 +46,14 @@ function Home2() {
             <span className={`${styles.icon} ${styles['icon-settings']}`} />
             settings
           </a>
-          <a className={styles.navItem} href="#">
+          <a
+            className={styles.navItem}
+            href="#"
+            onClick={(event) => {
+              event.preventDefault()
+              onLogout?.()
+            }}
+          >
             <span className={`${styles.icon} ${styles['icon-arrow']}`} />
             log out
           </a>

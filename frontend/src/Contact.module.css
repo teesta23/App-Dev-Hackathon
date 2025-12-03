@@ -1,0 +1,573 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  font-family: 'Inter', sans-serif;
+}
+
+.dashboardPage {
+  background: linear-gradient(180deg, #f5edff 0%, #efe6ff 48%, #ebdeff 100%);
+  color: #53377a;
+}
+
+.landingPage {
+  flex-direction: column;
+  background: linear-gradient(169deg, #231d5b 9.49%, #7b4daf 47.89%, #f44efd 98.93%);
+  color: #f6f2ff;
+  padding: 26px 30px 48px;
+}
+
+.landingNav {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.brand {
+  color: #d8b5ff;
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.ghostButton {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 10px 16px;
+  color: #f6f2ff;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.ghostButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 22px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.contentDashboard {
+  padding: 48px 44px;
+}
+
+.contentLanding {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 12px;
+}
+
+.breadcrumbRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: lowercase;
+  color: #a17bcc;
+}
+
+.landingPage .breadcrumbRow {
+  color: #e9ddff;
+}
+
+.crumb {
+  opacity: 0.8;
+}
+
+.crumbActive {
+  color: inherit;
+}
+
+.headerBlock {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+.headerCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 13px;
+  color: #9d73c7;
+  font-weight: 800;
+}
+
+.landingPage .kicker {
+  color: #f0e4ff;
+}
+
+.title {
+  margin: 0;
+  font-family: 'Almarai', sans-serif;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 0.96;
+  letter-spacing: 2px;
+}
+
+.landingPage .title {
+  color: #f4ebff;
+}
+
+.subtitle {
+  margin: 0;
+  color: #6f4a9d;
+  font-size: 18px;
+  max-width: 640px;
+}
+
+.landingPage .subtitle {
+  color: #e4dbff;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #ede2ff;
+  color: #6a3f98;
+  font-weight: 700;
+  text-transform: lowercase;
+  letter-spacing: 0.2px;
+  box-shadow: 0 10px 18px rgba(124, 79, 179, 0.18);
+}
+
+.landingPage .chip {
+  background: #361f63;
+  color: #f6f2ff;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
+}
+
+.headerCard {
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid transparent;
+}
+
+.headerCardDashboard {
+  background: #ffffff;
+  color: #53377a;
+  border-color: #eddfff;
+  box-shadow: 0 16px 30px rgba(110, 71, 166, 0.18);
+}
+
+.headerCardLanding {
+  background: linear-gradient(150deg, #2f1b67 0%, #2c1453 100%);
+  color: #f6f2ff;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 34px rgba(0, 0, 0, 0.32);
+}
+
+.headerCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.label {
+  color: #8b6bb5;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 1.1px;
+}
+
+.landingPage .label {
+  color: #dfcfff;
+}
+
+.status {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.badge {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: linear-gradient(140deg, #c37fff 0%, #8c57ff 100%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  text-transform: lowercase;
+  box-shadow: 0 12px 18px rgba(123, 69, 201, 0.28);
+}
+
+.statusList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #7b4daf;
+  box-shadow: 0 0 0 6px rgba(123, 77, 175, 0.12);
+}
+
+.landingPage .dot {
+  background: #e0c6ff;
+  box-shadow: 0 0 0 6px rgba(224, 198, 255, 0.16);
+}
+
+.statusLabel {
+  font-weight: 800;
+  color: inherit;
+}
+
+.statusValue {
+  color: #6a4f8f;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.landingPage .statusValue {
+  color: #e4dbff;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.link {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: rgba(123, 77, 175, 0.6);
+  text-decoration-thickness: 2px;
+}
+
+.secondaryButton {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(83, 55, 122, 0.24);
+  background: rgba(255, 255, 255, 0.8);
+  color: #53377a;
+  font-weight: 800;
+  text-transform: lowercase;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 12px 20px rgba(124, 79, 179, 0.15);
+}
+
+.secondaryButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 22px rgba(124, 79, 179, 0.22);
+}
+
+.landingPage .secondaryButton {
+  background: #3b236d;
+  color: #f6f2ff;
+  border-color: #5b3d94;
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+}
+
+.contactGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.card {
+  border-radius: 18px;
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid transparent;
+}
+
+.cardDashboard {
+  background: #ffffff;
+  color: #53377a;
+  border-color: #eddfff;
+  box-shadow: 0 18px 36px rgba(110, 71, 166, 0.18);
+}
+
+.cardLanding {
+  background: linear-gradient(145deg, #2f1b67 0%, #2b154d 100%);
+  color: #f6f2ff;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 38px rgba(0, 0, 0, 0.32);
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(123, 77, 175, 0.16);
+}
+
+.cardTitle {
+  font-family: 'Almarai', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: lowercase;
+}
+
+.cardSub {
+  color: #6f4a9d;
+  font-weight: 600;
+}
+
+.landingPage .cardSub {
+  color: #ded2ff;
+}
+
+.contactList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.contactRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(123, 77, 175, 0.06);
+  border: 1px solid rgba(123, 77, 175, 0.14);
+}
+
+.landingPage .contactRow {
+  background: #3a226f;
+  border-color: #4f308c;
+}
+
+.contactLabel {
+  font-weight: 800;
+  text-transform: lowercase;
+  letter-spacing: 0.3px;
+}
+
+.contactValue {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.contactDesc {
+  margin: 4px 0 0;
+  color: #6a4f8f;
+  font-weight: 600;
+}
+
+.landingPage .contactDesc {
+  color: #d6c9ff;
+}
+
+.pillButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(147deg, #b84cf6 10.41%, #6a4cf6 88.38%);
+  color: #fff;
+  line-height: 1.05;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: lowercase;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 12px 20px rgba(123, 69, 201, 0.32);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  text-decoration: none;
+}
+
+.pillButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 26px rgba(123, 69, 201, 0.4);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: inherit;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.inputGroup span {
+  letter-spacing: 0.3px;
+}
+
+.inputGroup input,
+.inputGroup textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #d8b5ff;
+  padding: 12px 12px 10px;
+  font-size: 15px;
+  background: #f8f3ff;
+  color: #3b215e;
+  box-shadow: 0 10px 20px rgba(106, 74, 142, 0.1);
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.landingPage .inputGroup input,
+.landingPage .inputGroup textarea {
+  background: #3b236d;
+  color: #f6f2ff;
+  border-color: #5b3d94;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.26);
+}
+
+.inputGroup input:focus,
+.inputGroup textarea:focus {
+  border-color: #a45af4;
+  box-shadow: 0 14px 26px rgba(123, 69, 201, 0.16);
+}
+
+.landingPage .inputGroup input:focus,
+.landingPage .inputGroup textarea:focus {
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.32);
+}
+
+.inputGroup textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.helper {
+  color: #6a4f8f;
+  font-weight: 700;
+}
+
+.landingPage .helper {
+  color: #e4dbff;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: linear-gradient(123deg, #a53bf2 24.58%, #8c57ff 83.8%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  text-transform: lowercase;
+  cursor: pointer;
+  box-shadow: 0 16px 26px rgba(123, 69, 201, 0.35);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+  border: none;
+}
+
+.primaryButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 32px rgba(123, 69, 201, 0.42);
+  filter: brightness(1.05);
+}
+
+.arrowText {
+  display: inline-block;
+  font-weight: 800;
+  color: #e8d5ff;
+}
+
+@media (max-width: 1080px) {
+  .headerBlock {
+    grid-template-columns: 1fr;
+  }
+
+  .contactGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .contentDashboard {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 720px) {
+  .landingPage {
+    padding: 20px 18px 36px;
+  }
+
+  .title {
+    font-size: 46px;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formFooter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerCardTop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

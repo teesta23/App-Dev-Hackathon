@@ -1,17 +1,31 @@
 import { useState } from 'react'
 import './App.css'
+import Contact from './Contact.tsx'
 import Home2 from './Home2.tsx'
+import LinkLeetcode from './LinkLeetcode.tsx'
 import Login from './Login.tsx'
 import Signup from './Signup.tsx'
-import LinkLeetcode from './LinkLeetcode.tsx'
 import SkillLevel, { type SkillLevelOption } from './SkillLevel.tsx'
 
 function App() {
-  const [view, setView] = useState<'landing' | 'login' | 'signup' | 'link' | 'skill' | 'dashboard'>('landing')
+  const [view, setView] = useState<
+    'landing' | 'login' | 'signup' | 'link' | 'skill' | 'dashboard' | 'contactLanding' | 'contactDashboard'
+  >('landing')
   const [, setSkillLevel] = useState<SkillLevelOption | null>(null)
   const [, setLeetcodeUsername] = useState<string>('')
 
-  if (view === 'dashboard') return <Home2 />
+  if (view === 'dashboard') {
+    return (
+      <Home2
+        onGoToContact={() => setView('contactDashboard')}
+        onLogout={() => setView('landing')}
+      />
+    )
+  }
+  if (view === 'contactLanding') return <Contact variant="landing" onBack={() => setView('landing')} />
+  if (view === 'contactDashboard') {
+    return <Contact variant="dashboard" onBack={() => setView('dashboard')} onLogout={() => setView('landing')} />
+  }
   if (view === 'login') {
     return (
       <Login
@@ -64,7 +78,15 @@ function App() {
           <div className="nav-links">
             <a href="#">explore</a>
             <a href="#">about</a>
-            <a href="#">contact</a>
+            <a
+              href="#"
+              onClick={(event) => {
+                event.preventDefault()
+                setView('contactLanding')
+              }}
+            >
+              contact
+            </a>
           </div>
           <button className="login" onClick={() => setView('login')}>log in</button>
         </div>
