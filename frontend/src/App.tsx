@@ -242,7 +242,7 @@ function App() {
           <div className="title-accent">[slack less]</div>
         </div>
         <p className="subtitle">
-          form a team and compete for the best leetcode score blah blah
+          form a team and compete to solve the most leetcode problems
         </p>
         <button className="cta" onClick={() => setView('signup')}>
           <span>&gt;</span> get started
