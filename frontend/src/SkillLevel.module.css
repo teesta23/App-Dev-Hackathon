@@ -77,8 +77,8 @@
 .pitch {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 28px;
+  gap: 18px;
+  padding: 36px;
   border-radius: 22px;
   background: linear-gradient(140deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
@@ -118,21 +118,22 @@
 
 .copy {
   margin: 0;
-  font-size: 18px;
+  font-size: 19px;
+  line-height: 1.65;
   color: #e4dbff;
-  max-width: 540px;
+  max-width: 620px;
 }
 
 
 .card {
   background: #f7f3ff;
   border-radius: 22px;
-  padding: 26px;
+  padding: 36px;
   box-shadow: 0 24px 48px rgba(34, 17, 75, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.8);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 24px;
 }
 
 .cardHeader {
@@ -161,15 +162,15 @@
 .levelGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .levelCard {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
   align-items: flex-start;
-  padding: 16px 16px 18px;
+  padding: 20px 20px 22px;
   border-radius: 16px;
   background: #ffffff;
   border: 1px solid rgba(123, 77, 175, 0.18);
@@ -194,8 +195,8 @@
 .levelTop {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 8px;
   width: 100%;
 }
 
@@ -208,20 +209,31 @@
 }
 
 .levelBadge {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(167, 90, 244, 0.12);
-  color: #7b4daf;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(123, 77, 175, 0.3);
+  background: #f5edff;
+  color: #6a4f8f;
   font-weight: 800;
-  letter-spacing: 0.3px;
-  text-transform: lowercase;
+  font-size: 4px;
+  letter-spacing: 0.25px;
+  text-transform: uppercase;
+  line-height: 1.2;
+  max-width: 90px;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
 }
 
 .levelDesc {
   margin: 0;
   color: #6a4f8f;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 1.65;
 }
 
 .levelFocus {
@@ -229,10 +241,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 12px;
   background: #f5edff;
   border: 1px solid rgba(123, 77, 175, 0.18);
+  gap: 10px;
 }
 
 .focusLabel {
@@ -249,17 +262,17 @@
 }
 
 .levelList {
-  margin: 2px 0 0 0;
+  margin: 4px 0 0 0;
   padding-left: 18px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   color: #6a4f8f;
   font-weight: 700;
 }
 
 .levelList li {
-  line-height: 1.35;
+  line-height: 1.6;
 }
 
 .actions {
