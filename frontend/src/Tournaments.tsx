@@ -7,6 +7,7 @@ type TournamentsProps = {
   onGoToContact?: () => void
   onGoToSettings?: () => void
   onGoToLessons?: () => void
+  onGoToRoom?: () => void
   onLogout?: () => void
 }
 
@@ -91,7 +92,14 @@ const ladderByName: Record<
   ],
 }
 
-function Tournaments({ onBackToDashboard, onGoToContact, onGoToSettings, onGoToLessons, onLogout }: TournamentsProps) {
+function Tournaments({
+  onBackToDashboard,
+  onGoToContact,
+  onGoToSettings,
+  onGoToLessons,
+  onGoToRoom,
+  onLogout,
+}: TournamentsProps) {
   const [expandedLadders, setExpandedLadders] = useState<Record<string, boolean>>({})
 
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
@@ -158,7 +166,13 @@ function Tournaments({ onBackToDashboard, onGoToContact, onGoToSettings, onGoToL
             <span className={`${homeStyles.icon} ${homeStyles['icon-calendar']}`} />
             Tournaments
           </button>
-          <button className={homeStyles.navItem} type="button">
+          <button
+            className={homeStyles.navItem}
+            type="button"
+            onClick={() => {
+              onGoToRoom?.()
+            }}
+          >
             <span className={`${homeStyles.icon} ${homeStyles['icon-user']}`} />
             My Room
           </button>

@@ -20,6 +20,7 @@ type LessonsProps = {
   onGoToTournaments?: () => void
   onGoToContact?: () => void
   onGoToSettings?: () => void
+  onGoToRoom?: () => void
   onLogout?: () => void
 }
 
@@ -89,6 +90,7 @@ function Lessons({
   onGoToTournaments,
   onGoToContact,
   onGoToSettings,
+  onGoToRoom,
   onLogout,
 }: LessonsProps) {
   const activeLevel = skillLevel ?? 'intermediate'
@@ -132,7 +134,13 @@ function Lessons({
           <span className={`${homeStyles.icon} ${homeStyles['icon-calendar']}`} />
           Tournaments
         </button>
-        <button className={homeStyles.navItem} type="button">
+        <button
+          className={homeStyles.navItem}
+          type="button"
+          onClick={() => {
+            onGoToRoom?.()
+          }}
+        >
           <span className={`${homeStyles.icon} ${homeStyles['icon-user']}`} />
           My Room
         </button>

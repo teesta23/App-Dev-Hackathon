@@ -9,9 +9,18 @@ type ContactProps = {
   onGoToSettings?: () => void
   onGoToTournaments?: () => void
   onGoToLessons?: () => void
+  onGoToRoom?: () => void
 }
 
-function Contact({ variant, onBack, onLogout, onGoToSettings, onGoToTournaments, onGoToLessons }: ContactProps) {
+function Contact({
+  variant,
+  onBack,
+  onLogout,
+  onGoToSettings,
+  onGoToTournaments,
+  onGoToLessons,
+  onGoToRoom,
+}: ContactProps) {
   const isDashboard = variant === 'dashboard'
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -47,7 +56,13 @@ function Contact({ variant, onBack, onLogout, onGoToSettings, onGoToTournaments,
             <span className={`${homeStyles.icon} ${homeStyles['icon-calendar']}`} />
             Tournaments
           </button>
-        <button className={homeStyles.navItem} type="button">
+        <button
+          className={homeStyles.navItem}
+          type="button"
+          onClick={() => {
+            onGoToRoom?.()
+          }}
+        >
           <span className={`${homeStyles.icon} ${homeStyles['icon-user']}`} />
           My Room
         </button>

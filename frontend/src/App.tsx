@@ -9,6 +9,7 @@ import Settings from './Settings.tsx'
 import Signup from './Signup.tsx'
 import SkillLevel, { type SkillLevelOption } from './SkillLevel.tsx'
 import Tournaments from './Tournaments.tsx'
+import Room from './Room.tsx'
 
 function App() {
   const [view, setView] = useState<
@@ -23,6 +24,7 @@ function App() {
     | 'settings'
     | 'tournaments'
     | 'lessons'
+    | 'room'
   >('landing')
   const [skillLevel, setSkillLevel] = useState<SkillLevelOption | null>(null)
   const [, setLeetcodeUsername] = useState<string>('')
@@ -35,6 +37,7 @@ function App() {
         onGoToSettings={() => setView('settings')}
         onGoToTournaments={() => setView('tournaments')}
         onGoToLessons={() => setView('lessons')}
+        onGoToRoom={() => setView('room')}
         onLogout={() => setView('landing')}
       />
     )
@@ -47,6 +50,7 @@ function App() {
         onGoToTournaments={() => setView('tournaments')}
         onGoToContact={() => setView('contactDashboard')}
         onGoToSettings={() => setView('settings')}
+        onGoToRoom={() => setView('room')}
         onLogout={() => setView('landing')}
       />
     )
@@ -58,6 +62,7 @@ function App() {
         onGoToContact={() => setView('contactDashboard')}
         onGoToSettings={() => setView('settings')}
         onGoToLessons={() => setView('lessons')}
+        onGoToRoom={() => setView('room')}
         onLogout={() => setView('landing')}
       />
     )
@@ -72,6 +77,7 @@ function App() {
         onGoToSettings={() => setView('settings')}
         onGoToTournaments={() => setView('tournaments')}
         onGoToLessons={() => setView('lessons')}
+        onGoToRoom={() => setView('room')}
       />
     )
   }
@@ -83,6 +89,7 @@ function App() {
         onGoToSupport={() => setView('contactDashboard')}
         onGoToTournaments={() => setView('tournaments')}
         onGoToLessons={() => setView('lessons')}
+        onGoToRoom={() => setView('room')}
       />
     )
   }
@@ -92,6 +99,18 @@ function App() {
         onBack={() => setView('landing')}
         onLogin={() => setView('dashboard')}
         onCreateAccount={() => setView('signup')}
+      />
+    )
+  }
+  if (view === 'room') {
+    return (
+      <Room
+        onBackToDashboard={() => setView('dashboard')}
+        onGoToLessons={() => setView('lessons')}
+        onGoToTournaments={() => setView('tournaments')}
+        onGoToContact={() => setView('contactDashboard')}
+        onGoToSettings={() => setView('settings')}
+        onLogout={() => setView('landing')}
       />
     )
   }

@@ -6,10 +6,19 @@ type Home2Props = {
   onGoToSettings?: () => void
   onGoToTournaments?: () => void
   onGoToLessons?: () => void
+  onGoToRoom?: () => void
   onLogout?: () => void
 }
 
-function Home2({ skillLevel, onGoToContact, onGoToSettings, onGoToTournaments, onGoToLessons, onLogout }: Home2Props) {
+function Home2({
+  skillLevel,
+  onGoToContact,
+  onGoToSettings,
+  onGoToTournaments,
+  onGoToLessons,
+  onGoToRoom,
+  onLogout,
+}: Home2Props) {
   const profileName = 'John Smith'
   const profileInitials = profileName
     .split(' ')
@@ -77,7 +86,14 @@ function Home2({ skillLevel, onGoToContact, onGoToSettings, onGoToTournaments, o
             <span className={`${styles.icon} ${styles['icon-calendar']}`} />
             Tournaments
           </a>
-          <a className={styles.navItem} href="#">
+          <a
+            className={styles.navItem}
+            href="#"
+            onClick={(event) => {
+              event.preventDefault()
+              onGoToRoom?.()
+            }}
+          >
             <span className={`${styles.icon} ${styles['icon-user']}`} />
             My Room
           </a>

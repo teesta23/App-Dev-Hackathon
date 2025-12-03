@@ -8,9 +8,10 @@ type SettingsProps = {
   onGoToSupport?: () => void
   onGoToTournaments?: () => void
   onGoToLessons?: () => void
+  onGoToRoom?: () => void
 }
 
-function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments, onGoToLessons }: SettingsProps) {
+function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments, onGoToLessons, onGoToRoom }: SettingsProps) {
   const [username, setUsername] = useState('John Smith')
   const [leetcodeHandle, setLeetcodeHandle] = useState('john_smith')
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -70,7 +71,13 @@ function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments, onGoToLe
           <span className={`${homeStyles.icon} ${homeStyles['icon-calendar']}`} />
           Tournaments
         </button>
-        <button className={homeStyles.navItem} type="button">
+        <button
+          className={homeStyles.navItem}
+          type="button"
+          onClick={() => {
+            onGoToRoom?.()
+          }}
+        >
           <span className={`${homeStyles.icon} ${homeStyles['icon-user']}`} />
           My Room
         </button>
