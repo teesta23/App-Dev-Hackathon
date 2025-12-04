@@ -2,12 +2,13 @@
   --sidebar-width: clamp(200px, 22vw, 248px);
   display: flex;
   align-items: flex-start;
+  height: 100vh;
   min-height: 100vh;
   background: linear-gradient(180deg, #f5edff 0%, #efe6ff 48%, #ebdeff 100%);
   color: #53377a;
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
-  overflow-y: visible;
+  overflow-y: auto;
   position: relative;
   isolation: isolate;
   padding-left: var(--sidebar-width);

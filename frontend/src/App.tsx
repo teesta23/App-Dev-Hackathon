@@ -232,7 +232,9 @@ function App() {
               contact
             </a>
           </div>
-          <button className="login" onClick={() => setView('login')}>log in</button>
+          <button className="login" onClick={() => setView('login')}>
+            <span>&gt;</span> log in
+          </button>
         </div>
       </nav>
 

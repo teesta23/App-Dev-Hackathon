@@ -2,6 +2,7 @@
   --sidebar-width: clamp(200px, 22vw, 248px);
   display: flex;
   align-items: flex-start;
+  height: 100vh;
   min-height: 100vh;
   background: linear-gradient(180deg, #f5edff 0%, #efe6ff 48%, #ebdeff 100%);
   color: #53377a;
@@ -9,7 +10,7 @@
   position: relative;
   isolation: isolate;
   overflow-x: hidden;
-  overflow-y: visible;
+  overflow-y: auto;
   padding-left: var(--sidebar-width);
 }
 

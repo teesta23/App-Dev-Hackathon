@@ -11,9 +11,11 @@
   color: #53377a;
   position: relative;
   overflow-x: hidden;
-  overflow-y: visible;
+  overflow-y: auto;
   isolation: isolate;
   padding-left: var(--sidebar-width);
+  height: 100vh;
+  min-height: 100vh;
 }
 
 .dashboardPage::before,

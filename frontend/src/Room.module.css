@@ -2,10 +2,13 @@
   --sidebar-width: clamp(200px, 22vw, 248px);
   display: flex;
   align-items: flex-start;
+  height: 100vh;
   min-height: 100vh;
   background: linear-gradient(180deg, #f6ecff 0%, #efe5ff 45%, #e4d5ff 100%);
   color: #4a2a76;
   font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-left: var(--sidebar-width);
 }
 
