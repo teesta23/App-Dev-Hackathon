@@ -1,6 +1,11 @@
 import os
 from typing import List, Optional
 
+#for leetcode graphql
+import requests
+from datetime import datetime
+
+
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import Response
 from pydantic import ConfigDict, BaseModel, Field, EmailStr
@@ -49,7 +54,8 @@ class UserModel(BaseModel):
     username: str = Field(...)
     email: EmailStr = Field(...)
     password: str = Field(...)
-    lcUsername: str = Field(...)
+    lcUsername: str | None = None
+    leetcodeProfile: dict | None = None
     model_config = ConfigDict(
         populate_by_name=True,
     )
@@ -59,27 +65,58 @@ class UpdateUserModel(BaseModel):
     email: EmailStr | None = None
     password: str | None = None
     lcUsername: str | None = None
+    leetcodeProfile: dict | None = None
     model_config = ConfigDict(
         json_encoders={ObjectId: str},
     )
 
-
-class RegisterRequest(BaseModel):
-    username: str
-    email: str
-    password: str
-
-class LeetCodeLinkRequest(BaseModel):
+class LeetCodeUpdateRequest(BaseModel):
+    id: str
     lcUsername: str
 
-class LoginRequest(BaseModel):
-    username: str
-    password: str
 
-class HomeRequest(BaseModel):
-    username: str
-    points: int = 0
-    #tournaments: 
+class LeetCodeUpdateResponse(BaseModel):
+    lcUsername: str
+    leetcodeProfile: dict
+
+LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql"
+
+LEETCODE_QUERY = """
+query getUserProfile($username: String!) {
+  matchedUser(username: $username) {
+    username
+    submitStats {
+      acSubmissionNum {
+        difficulty
+        count
+      }
+    }
+  }
+}
+"""
+
+def fetch_leetcode_profile(username: str):
+    response = requests.post(
+        LEETCODE_GRAPHQL_URL,
+        json={"query": LEETCODE_QUERY, "variables": {"username": username}},
+        headers={"Content-Type": "application/json"},
+        timeout=10
+    )
+
+    data = response.json()
+
+    if "data" not in data or data["data"]["matchedUser"] is None:
+        return None
+
+    stats = data["data"]["matchedUser"]["submitStats"]["acSubmissionNum"]
+
+    return {
+        "totalSolved": stats[0]["count"],
+        "easySolved": stats[1]["count"],
+        "mediumSolved": stats[2]["count"],
+        "hardSolved": stats[3]["count"],
+        "lastUpdated": datetime.utcnow().isoformat(),
+    }
 
 #adding a user
 @app.post(
@@ -140,3 +177,34 @@ async def update_user(id: str, user: UpdateUserModel):
         return existing_user
     
     raise HTTPException(status_code=404, detail=f"User {id} not found")
+
+@app.put(
+    "/leetcode/update",
+    response_description="Retrieve and update user's LeetCode stats",
+    response_model=LeetCodeUpdateResponse,
+    response_model_by_alias=False,
+)
+async def update_leetcode_stats(data: LeetCodeUpdateRequest):
+    id = data.id
+    lc_username = data.lcUsername
+
+    solved = fetch_leetcode_profile(lc_username)
+
+    if solved is None:
+        raise HTTPException(status_code=404, detail=f"LeetCode user {lc_username} not found")
+
+    update_result = await users_collection.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": {
+            "lcUsername": lc_username,
+            "leetcodeProfile": solved
+        }},
+    )
+
+    if update_result.matched_count == 0:
+        raise HTTPException(status_code=404, detail=f"User {id} not found")
+
+    return {
+        "lcUsername": lc_username,
+        "leetcodeProfile": solved
+    }
