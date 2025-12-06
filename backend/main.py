@@ -34,6 +34,7 @@ app = FastAPI()
 client = AsyncMongoClient(MONGO_URL)
 db = client[MONGO_DB]
 users_collection = db.get_collection("users")
+tournaments_collection = db.get_collection("tournaments")
 
 origins = [
     "http://localhost:5173",
@@ -82,21 +83,32 @@ class LeetCodeUpdateResponse(BaseModel):
 class TournamentParticipant(BaseModel):
     id: str
     username: str
-    initialSolved: int
-    currentSolved: int
+    initialTotalSolved: int
+    currentTotalSolved: int
+    initialEasySolved: int
+    currentEasySolved: int
+    initialMediumSolved: int
+    currentMediumSolved: int
+    initialHardSolved: int
+    currentHardSolved: int
     score: int
 
 class TournamentModel(BaseModel):
     id: PyObjectId | None = Field(alias="_id", default=None)
-    name: str
-    password: str
-    startTime: str
-    endTime: str
+    name: str = Field(...)
+    password: str = Field(...)
+    startTime: str = Field(...)
+    endTime: str = Field(...)
     participants: list[TournamentParticipant] = []
 
     model_config = ConfigDict(
         populate_by_name=True,
     )
+
+class JoinTournamentRequest(BaseModel):
+    id: str
+    tournamentName: str
+    tournamentPassword: str
 
 LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql"
 
@@ -226,4 +238,53 @@ async def update_leetcode_stats(data: LeetCodeUpdateRequest):
     return {
         "lcUsername": lc_username,
         "leetcodeProfile": solved
+    }
+
+@app.post(
+    "/tournaments/",
+    response_description="Create a tournament",
+    response_model=TournamentModel,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,
+)
+async def create_tournament(tournament: TournamentModel):
+    new_tournament = tournament.model_dump(by_alias=True, exclude=["id"])
+    result = await tournaments_collection.insert_one(new_tournament)
+    new_tournament["_id"] = result.inserted_id
+
+    return new_tournament
+    
+@app.put(
+    "/tournaments/",
+    response_description="Join a tournament by name & password",
+    response_model=TournamentModel,
+    response_model_by_alias=False,
+)
+async def join_tournament(data: JoinTournamentRequest):
+    
+    #lookup tourny that matches user/pass combo
+    tourament = await tournaments_collection.find_one({
+        "name": data.tournamentName,
+        "password": data.tournamentPassword
+    })
+
+    if not tourament:
+        raise HTTPException(status_code=404, detail=f"Invalid tournament name/password.")
+    
+    #user needs to have linked their lc profile
+    user = await users_collection.find_one({"_id": ObjectId(data.id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    if not user.get("leetCodeProfile"):
+        raise HTTPException(status_code=400, detail="User has not linked their LeetCode Profile.")
+    
+    initialTotalSolved = user["leetcodeProfile"]["totalSolved"]
+    initialEasySolved = user["leetcodeProfile"]["easySolved"]
+    initialMediumSolved = user["leetcodeProfile"]["MediumSolved"]
+    initialHardSolved = user["leetcodeProfile"]["hardSolved"]
+    participant = {
+        "id": data.id,
+        "username": user["username"],
+
     }
