@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import styles from './LinkLeetcode.module.css'
+import { updateLeetCodeStats } from './api/leetcode'
 
 type LinkLeetcodeProps = {
   onBack?: () => void
@@ -10,10 +11,24 @@ type LinkLeetcodeProps = {
 function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
   const [username, setUsername] = useState('')
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+
     event.preventDefault()
-    if (!username.trim()) return
-    onContinue?.(username.trim())
+    if (!username) return
+
+    try {
+      const userId = localStorage.getItem("user_id");
+      if(!userId) {
+        console.error("No user ID found.")
+        return
+      }
+
+      const result = await updateLeetCodeStats(userId, username);
+      console.log("Leetcode stats updated:", result);
+    } catch (err) {
+      console.error("Error updating leetcode stats:", err);
+    }
+    onContinue?.(username)
   }
 
   const handleSkip = () => {
