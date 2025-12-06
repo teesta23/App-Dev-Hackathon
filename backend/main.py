@@ -79,6 +79,25 @@ class LeetCodeUpdateResponse(BaseModel):
     lcUsername: str
     leetcodeProfile: dict
 
+class TournamentParticipant(BaseModel):
+    id: str
+    username: str
+    initialSolved: int
+    currentSolved: int
+    score: int
+
+class TournamentModel(BaseModel):
+    id: PyObjectId | None = Field(alias="_id", default=None)
+    name: str
+    password: str
+    startTime: str
+    endTime: str
+    participants: list[TournamentParticipant] = []
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+
 LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql"
 
 LEETCODE_QUERY = """
