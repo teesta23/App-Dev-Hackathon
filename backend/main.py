@@ -281,7 +281,7 @@ async def join_tournament(data: JoinTournamentRequest):
     
     initialTotalSolved = user["leetcodeProfile"]["totalSolved"]
     initialEasySolved = user["leetcodeProfile"]["easySolved"]
-    initialMediumSolved = user["leetcodeProfile"]["mediumSolved"]
+    initialMediumSolved = user["leetcodeProfile"]["MediumSolved"]
     initialHardSolved = user["leetcodeProfile"]["hardSolved"]
     participant = {
         "id": data.id,
