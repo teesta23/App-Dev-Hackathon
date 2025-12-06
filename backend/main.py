@@ -196,6 +196,7 @@ async def update_user(id: str, user: UpdateUserModel):
         return existing_user
     
     raise HTTPException(status_code=404, detail=f"User {id} not found")
+<<<<<<< HEAD
 
 @app.put(
     "/leetcode/update",
@@ -227,3 +228,5 @@ async def update_leetcode_stats(data: LeetCodeUpdateRequest):
         "lcUsername": lc_username,
         "leetcodeProfile": solved
     }
+=======
+>>>>>>> login-ananya
