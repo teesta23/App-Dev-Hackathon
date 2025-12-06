@@ -21,7 +21,7 @@ load_dotenv()
 
 MONGO_URL = os.getenv("MONGO_URL")
 MONGO_DB = os.getenv("MONGO_DB")
-
+print (MONGO_URL)
 # CREATE A VIRTUAL ENVIRONMENT AND INSTALL THE REQUIRED FASTAPI PACKAGES
 
 app = FastAPI()
