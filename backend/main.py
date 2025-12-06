@@ -263,13 +263,15 @@ async def create_tournament(tournament: TournamentModel):
 async def join_tournament(data: JoinTournamentRequest):
     
     #lookup tourny that matches user/pass combo
-    tourament = await tournaments_collection.find_one({
+    tournament = await tournaments_collection.find_one({
         "name": data.tournamentName,
         "password": data.tournamentPassword
     })
 
-    if not tourament:
+    if not tournament:
         raise HTTPException(status_code=404, detail=f"Invalid tournament name/password.")
+    
+    tournament_id = tournament["_id"]
     
     #user needs to have linked their lc profile
     user = await users_collection.find_one({"_id": ObjectId(data.id)})
@@ -286,5 +288,17 @@ async def join_tournament(data: JoinTournamentRequest):
     participant = {
         "id": data.id,
         "username": user["username"],
-
+        "initialTotalSolved": initialTotalSolved,
+        "currentTotalSolved": initialTotalSolved,
+        "initialEasySolved": initialEasySolved,
+        "currentEasySolved": initialEasySolved,
+        "initialMediumSolved": initialMediumSolved,
+        "currentMediumSolved": initialMediumSolved,
+        "initialHardSolved": initialHardSolved,
+        "currentHardSolved": initialHardSolved,
+        "score": 0,
     }
+
+    updated = await tournaments_collection.find_one_and_update(
+        {"_id": ObjectId()}
+    )
