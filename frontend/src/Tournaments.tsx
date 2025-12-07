@@ -1,6 +1,14 @@
-import { useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import styles from './Tournaments.module.css'
 import homeStyles from './Home2.module.css'
+import {
+  API_BASE_URL,
+  createTournament,
+  fetchTournaments,
+  joinTournament,
+  type Tournament,
+  type TournamentParticipant,
+} from './api/tournaments'
 
 type TournamentsProps = {
   onBackToDashboard?: () => void
@@ -11,50 +19,16 @@ type TournamentsProps = {
   onLogout?: () => void
 }
 
-const initialTournaments = [
-  {
-    name: 'weekly sprint',
-    mode: 'team ladder',
-    ends: 'sun @ 11:59p',
-    placement: 3,
-    totalPlayers: 24,
-    solved: 18,
-    target: 24,
-    points: 1280,
-    streak: '6-day streak',
-    progress: 76,
-    momentum: '+2 spots',
-    trend: 'up',
-  },
-  {
-    name: 'october trio showdown',
-    mode: 'trio teams',
-    ends: 'wed @ 9p',
-    placement: 1,
-    totalPlayers: 12,
-    solved: 21,
-    target: 25,
-    points: 2010,
-    streak: '12-day streak',
-    progress: 88,
-    momentum: '+1 spot',
-    trend: 'up',
-  },
-  {
-    name: 'late night grinders',
-    mode: 'solo ladder',
-    ends: 'fri @ 1a',
-    placement: 6,
-    totalPlayers: 30,
-    solved: 11,
-    target: 20,
-    points: 720,
-    streak: '3-day streak',
-    progress: 54,
-    momentum: '-1 spot',
-    trend: 'down',
-  },
-]
+type LadderEntry = {
+  rank: number
+  name: string
+  lcUsername?: string | null
+  solvedSinceJoin: number
+  points: number
+  isYou?: boolean
+}
+
+const DEFAULT_DURATION_HOURS = 24 * 7
 
 const streakOptions = [
   { label: 'single day cover', cost: 120, desc: 'Protect 1 missed day. No streak drop.' },
@@ -62,34 +36,40 @@ const streakOptions = [
   { label: 'auto-protect pack (3 uses)', cost: 480, desc: 'Auto-applies to your next misses.' },
 ]
 
-const ladderByName: Record<
-  string,
-  Array<{ rank: number; name: string; solvedToday: number; points: number; isYou?: boolean }>
-> = {
-  'weekly sprint': [
-    { rank: 1, name: 'alice_w', solvedToday: 8, points: 1540 },
-    { rank: 2, name: 'devon', solvedToday: 7, points: 1420 },
-    { rank: 3, name: 'John Smith', solvedToday: 6, points: 1280, isYou: true },
-    { rank: 4, name: 'maria', solvedToday: 5, points: 1185 },
-    { rank: 5, name: 'jamal', solvedToday: 5, points: 1100 },
-    { rank: 6, name: 'nina', solvedToday: 4, points: 1020 },
-  ],
-  'october trio showdown': [
-    { rank: 1, name: 'John Smith', solvedToday: 9, points: 2010, isYou: true },
-    { rank: 2, name: 'team delta', solvedToday: 8, points: 1910 },
-    { rank: 3, name: 'bootcamp_bros', solvedToday: 6, points: 1715 },
-    { rank: 4, name: 'no_sleep', solvedToday: 5, points: 1600 },
-    { rank: 5, name: 'jetpack_trios', solvedToday: 5, points: 1550 },
-    { rank: 6, name: 'lambda', solvedToday: 4, points: 1420 },
-  ],
-  'late night grinders': [
-    { rank: 1, name: 'owen', solvedToday: 6, points: 980 },
-    { rank: 2, name: 'sahana', solvedToday: 6, points: 970 },
-    { rank: 3, name: 'tiff', solvedToday: 5, points: 930 },
-    { rank: 4, name: 'yuki', solvedToday: 4, points: 860 },
-    { rank: 5, name: 'John Smith', solvedToday: 3, points: 720, isYou: true },
-    { rank: 6, name: 'max', solvedToday: 2, points: 610 },
-  ],
+const tournamentKey = (tournament: Tournament) => tournament._id ?? tournament.id ?? tournament.name
+
+const solvedSinceJoin = (participant: TournamentParticipant) =>
+  Math.max(0, (participant.currentTotalSolved ?? 0) - (participant.initialTotalSolved ?? 0))
+
+const normalizeTournament = (tournament: Tournament): Tournament => ({
+  ...tournament,
+  streak: tournament.streak ?? 0,
+  lastChecked: tournament.lastChecked ?? null,
+  participants: [...(tournament.participants ?? [])].sort(
+    (a, b) => (b.score ?? 0) - (a.score ?? 0),
+  ),
+})
+
+const sortByStart = (items: Tournament[]) =>
+  [...items].sort(
+    (a, b) => new Date(b.startTime ?? 0).getTime() - new Date(a.startTime ?? 0).getTime(),
+  )
+
+const formatTimeRemaining = (endTime?: string) => {
+  if (!endTime) return 'active'
+  const end = Date.parse(endTime)
+  if (Number.isNaN(end)) return 'active'
+
+  const diff = end - Date.now()
+  if (diff <= 0) return 'ended'
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
+  const minutes = Math.floor((diff / (1000 * 60)) % 60)
+
+  if (days > 0) return `${days}d ${hours}h left`
+  if (hours > 0) return `${hours}h ${minutes}m left`
+  return `${minutes}m left`
 }
 
 function Tournaments({
@@ -100,52 +80,141 @@ function Tournaments({
   onGoToRoom,
   onLogout,
 }: TournamentsProps) {
-  const [tournaments, setTournaments] = useState(initialTournaments)
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [expandedLadders, setExpandedLadders] = useState<Record<string, boolean>>({})
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleCreate = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const [createForm, setCreateForm] = useState({ name: '', password: '' })
+  const [joinForm, setJoinForm] = useState({ name: '', password: '' })
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [joinError, setJoinError] = useState<string | null>(null)
+  const [createSubmitting, setCreateSubmitting] = useState(false)
+  const [joinSubmitting, setJoinSubmitting] = useState(false)
+
+  const [userId, setUserId] = useState<string | null>(null)
+  const [userPoints, setUserPoints] = useState(0)
+  const [userName, setUserName] = useState('Player')
+
+  useEffect(() => {
+    const storedUserId = localStorage.getItem('user_id')
+    if (storedUserId) {
+      setUserId(storedUserId)
+      const loadUser = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/users/${storedUserId}`)
+          if (!response.ok) return
+          const data = await response.json()
+          setUserPoints(typeof data.points === 'number' ? data.points : 0)
+          setUserName(data.username ?? 'Player')
+        } catch {
+          //best-effort load
+        }
+      }
+      loadUser()
+    }
+  }, [])
+
+  const loadTournaments = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchTournaments()
+      const normalized = data.map(normalizeTournament)
+      setTournaments(sortByStart(normalized))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not load tournaments.'
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleJoin = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-  }
-
-  const handleLeave = (name: string) => {
-    const confirmLeave = window.confirm(`Leave "${name}"? Your ladder placement will be removed.`)
-    if (!confirmLeave) return
-
-    setTournaments((prev) => prev.filter((tour) => tour.name !== name))
-    setExpandedLadders((prev) => {
-      const { [name]: _removed, ...rest } = prev
-      return rest
-    })
-  }
+  useEffect(() => {
+    loadTournaments()
+  }, [])
 
   const ladderEntries = useMemo(() => {
-    const filled: typeof ladderByName = {}
-
+    const filled: Record<string, LadderEntry[]> = {}
     tournaments.forEach((tour) => {
-      const base = ladderByName[tour.name] ?? []
-      const missing = Math.max(0, tour.totalPlayers - base.length)
-      const filledEntries = [...base]
-      const lastPoints = base[base.length - 1]?.points ?? 1200
-
-      for (let i = 1; i <= missing; i += 1) {
-        const rank = base.length + i
-        filledEntries.push({
-          rank,
-          name: `player-${rank}`,
-          solvedToday: 0,
-          points: Math.max(50, lastPoints - i * 20),
-        })
-      }
-
-      filled[tour.name] = filledEntries
+      const key = tournamentKey(tour)
+      const sorted = [...(tour.participants ?? [])].sort(
+        (a, b) => (b.score ?? 0) - (a.score ?? 0),
+      )
+      filled[key] = sorted.map((participant, index) => ({
+        rank: index + 1,
+        name: participant.username || participant.lcUsername || 'player',
+        lcUsername: participant.lcUsername,
+        solvedSinceJoin: solvedSinceJoin(participant),
+        points: participant.score ?? 0,
+        isYou: Boolean(userId && participant.id === userId),
+      }))
     })
-
     return filled
-  }, [tournaments])
+  }, [tournaments, userId])
+
+  const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const name = createForm.name.trim()
+    const password = createForm.password.trim()
+
+    if (!name || !password) {
+      setCreateError('Tournament name and password are required.')
+      return
+    }
+
+    setCreateSubmitting(true)
+    setCreateError(null)
+
+    try {
+      const created = normalizeTournament(
+        await createTournament({ name, password, durationHours: DEFAULT_DURATION_HOURS }),
+      )
+      setTournaments((prev) =>
+        sortByStart([created, ...prev.filter((t) => tournamentKey(t) !== tournamentKey(created))]),
+      )
+      setCreateForm({ name: '', password: '' })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not create tournament.'
+      setCreateError(message)
+    } finally {
+      setCreateSubmitting(false)
+    }
+  }
+
+  const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const name = joinForm.name.trim()
+    const password = joinForm.password.trim()
+
+    if (!userId) {
+      setJoinError('Log in to join a tournament.')
+      return
+    }
+
+    if (!name || !password) {
+      setJoinError('Tournament name and password are required.')
+      return
+    }
+
+    setJoinSubmitting(true)
+    setJoinError(null)
+
+    try {
+      const joined = normalizeTournament(await joinTournament({ id: userId, name, password }))
+      const key = tournamentKey(joined)
+      setTournaments((prev) =>
+        sortByStart([joined, ...prev.filter((tour) => tournamentKey(tour) !== key)]),
+      )
+      setExpandedLadders((prev) => ({ ...prev, [key]: true }))
+      setJoinForm({ name: '', password: '' })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not join tournament.'
+      setJoinError(message)
+    } finally {
+      setJoinSubmitting(false)
+    }
+  }
 
   const getInitials = (name: string) => {
     const parts = name.trim().split(/\s+/)
@@ -227,7 +296,7 @@ function Tournaments({
       <main className={styles.content}>
         <div className={styles.headerRow}>
           <div className={`${homeStyles.topbarPoints} ${styles.pointsBadge}`}>
-            <div className={homeStyles.pointsNumber}>2876</div>
+            <div className={homeStyles.pointsNumber}>{userPoints}</div>
             <div className={homeStyles.pointsLabel}>CURRENT POINTS</div>
           </div>
 
@@ -239,6 +308,11 @@ function Tournaments({
               Create or join a ladder, keep tabs on every bracket you’re in, and spend points on streak saves
               when life gets in the way.
             </p>
+            <div className={styles.tags}>
+              <span className={styles.tag}>hosted by {userName}</span>
+              <span className={styles.tag}>+10 easy / +20 medium / +30 hard</span>
+              <span className={styles.tag}>streak checks daily</span>
+            </div>
           </div>
         </div>
 
@@ -250,13 +324,23 @@ function Tournaments({
                   <div className={styles.panelKicker}>current runs</div>
                   <div className={styles.panelTitle}>your standings</div>
                 </div>
-                <button className={styles.secondaryButton} type="button">
-                  refresh
+                <button className={styles.secondaryButton} type="button" onClick={loadTournaments}>
+                  {loading ? 'refreshing...' : 'refresh'}
                 </button>
               </div>
 
               <div className={styles.standingList}>
-                {tournaments.length === 0 ? (
+                {error ? (
+                  <div className={styles.emptyState}>
+                    <div className={styles.emptyTitle}>couldn&apos;t load tournaments</div>
+                    <div className={styles.emptySub}>{error}</div>
+                  </div>
+                ) : loading && tournaments.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <div className={styles.emptyTitle}>loading tournaments…</div>
+                    <div className={styles.emptySub}>Hang tight while we sync with the backend.</div>
+                  </div>
+                ) : tournaments.length === 0 ? (
                   <div className={styles.emptyState}>
                     <div className={styles.emptyTitle}>you&apos;re not in any tournaments</div>
                     <div className={styles.emptySub}>
@@ -265,26 +349,24 @@ function Tournaments({
                   </div>
                 ) : (
                   tournaments.map((tour) => {
-                    const entries = ladderEntries[tour.name] ?? []
-                    const showAll = expandedLadders[tour.name]
+                    const key = tournamentKey(tour)
+                    const entries = ladderEntries[key] ?? []
+                    const showAll = expandedLadders[key]
                     const visibleEntries = showAll ? entries : entries.slice(0, 5)
+                    const streakLabel =
+                      tour.streak && tour.streak > 0 ? `${tour.streak}-day streak` : 'streak reset'
 
                     return (
-                      <div key={tour.name} className={styles.standingCard}>
+                      <div key={key} className={styles.standingCard}>
                         <div className={styles.standingTop}>
                           <div>
                             <div className={styles.tourName}>{tour.name}</div>
+                            <div className={styles.helper}>started {new Date(tour.startTime).toLocaleString()}</div>
                           </div>
                           <div className={styles.metaPills}>
-                            <span className={styles.metaChip}>{tour.totalPlayers} players</span>
-                            <span className={styles.metaChip}>{tour.streak}</span>
-                            <span
-                              className={`${styles.metaChip} ${
-                                tour.trend === 'up' ? styles.momentumPositive : styles.momentumNegative
-                              }`}
-                            >
-                              {tour.momentum}
-                            </span>
+                            <span className={styles.metaChip}>{tour.participants?.length ?? 0} players</span>
+                            <span className={styles.metaChip}>{streakLabel}</span>
+                            <span className={styles.metaChip}>{formatTimeRemaining(tour.endTime)}</span>
                           </div>
                         </div>
 
@@ -298,8 +380,10 @@ function Tournaments({
                               <div className={styles.playerInfo}>
                                 <span className={styles.avatar}>{getInitials(entry.name)}</span>
                                 <div className={styles.playerText}>
-                                  <div className={styles.playerName}>{entry.name}</div>
-                                  <div className={styles.playerSub}>{entry.solvedToday} solved today</div>
+                                  <div className={styles.playerName}>
+                                    {entry.name} {entry.lcUsername ? `(@${entry.lcUsername})` : ''}
+                                  </div>
+                                  <div className={styles.playerSub}>{entry.solvedSinceJoin} solved since join</div>
                                 </div>
                               </div>
                               <div className={styles.points}>{entry.points} pts</div>
@@ -309,18 +393,9 @@ function Tournaments({
 
                         <div className={styles.cardActions}>
                           <div className={styles.statSub}>
-                            {showAll
-                              ? `Showing all ${entries.length} placements.`
-                              : `Showing top ${visibleEntries.length} of ${tour.totalPlayers}.`}
+                            Points update off your LeetCode solves: +10 easy, +20 medium, +30 hard.
                           </div>
                           <div className={styles.cardActionButtons}>
-                            <button
-                              className={styles.leaveButton}
-                              type="button"
-                              onClick={() => handleLeave(tour.name)}
-                            >
-                              leave tournament
-                            </button>
                             {entries.length > 5 && (
                               <button
                                 className={styles.ghostButton}
@@ -328,11 +403,11 @@ function Tournaments({
                                 onClick={() =>
                                   setExpandedLadders((prev) => ({
                                     ...prev,
-                                    [tour.name]: !prev[tour.name],
+                                    [key]: !prev[key],
                                   }))
                                 }
                               >
-                                {showAll ? 'collapse' : 'view all placements'}
+                                {showAll ? 'collapse' : `view all ${entries.length} placements`}
                               </button>
                             )}
                           </div>
@@ -357,15 +432,30 @@ function Tournaments({
               <form className={styles.form} onSubmit={handleCreate}>
                 <label className={styles.inputGroup}>
                   <span>tournament name</span>
-                  <input name="tournament-name" placeholder="friday night sprint or finals prep ladder" />
+                  <input
+                    name="tournament-name"
+                    placeholder="friday night sprint or finals prep ladder"
+                    value={createForm.name}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, name: event.target.value }))}
+                    required
+                  />
                 </label>
                 <label className={styles.inputGroup}>
                   <span>tournament password</span>
-                  <input name="tournament-password" placeholder="optional password to join" />
+                  <input
+                    name="tournament-password"
+                    placeholder="password required to join"
+                    value={createForm.password}
+                    onChange={(event) => setCreateForm((prev) => ({ ...prev, password: event.target.value }))}
+                    required
+                  />
                 </label>
 
-                <button className={styles.primaryButton} type="submit">
-                  <span className={styles.arrowText}>&gt;</span> create tournament
+                {createError ? <div className={styles.helper}>{createError}</div> : null}
+
+                <button className={styles.primaryButton} type="submit" disabled={createSubmitting}>
+                  <span className={styles.arrowText}>&gt;</span>{' '}
+                  {createSubmitting ? 'creating...' : 'create tournament'}
                 </button>
               </form>
             </section>
@@ -381,17 +471,32 @@ function Tournaments({
               <form className={styles.form} onSubmit={handleJoin}>
                 <label className={styles.inputGroup}>
                   <span>tournament name</span>
-                  <input name="join-tournament-name" placeholder="e.g. friday night sprint" />
+                  <input
+                    name="join-tournament-name"
+                    placeholder="e.g. friday night sprint"
+                    value={joinForm.name}
+                    onChange={(event) => setJoinForm((prev) => ({ ...prev, name: event.target.value }))}
+                    required
+                  />
                 </label>
                 <label className={styles.inputGroup}>
                   <span>password</span>
-                  <input name="join-tournament-password" placeholder="required if host set one" />
+                  <input
+                    name="join-tournament-password"
+                    placeholder="host password required"
+                    value={joinForm.password}
+                    onChange={(event) => setJoinForm((prev) => ({ ...prev, password: event.target.value }))}
+                    required
+                  />
                 </label>
-                <div className={styles.helper}>Join any public or password-protected tournament.</div>
+                <div className={styles.helper}>
+                  Join ladders that are less than a day old. You need a linked LeetCode account to enter.
+                </div>
+                {joinError ? <div className={styles.helper}>{joinError}</div> : null}
 
                 <div className={styles.joinActions}>
-                  <button className={styles.secondaryButton} type="submit">
-                    join tournament
+                  <button className={styles.secondaryButton} type="submit" disabled={joinSubmitting}>
+                    {joinSubmitting ? 'joining...' : 'join tournament'}
                   </button>
                 </div>
               </form>
@@ -403,7 +508,7 @@ function Tournaments({
                   <div className={styles.panelKicker}>saves</div>
                   <div className={styles.panelTitle}>buy streak saves</div>
                 </div>
-                <div className={styles.balancePill}>2876 pts</div>
+                <div className={styles.balancePill}>{userPoints} pts</div>
               </div>
               <p className={styles.helper}>
                 Use points to auto-cover missed days and keep your streak alive across every tournament.

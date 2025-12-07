@@ -25,23 +25,13 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
     const password1 = String(formData.get('password') ?? '').trim()
     const password2 = String(formData.get('re-password') ?? '').trim()
 
-    if (isEmail(username)) {
-      setError('Enter email, not username for this field.')
-      return
-    }
-
-    if (isUsername(email)) {
-      setError('Enter username, not email for this field.')
+    if (!isUsername(username)) {
+      setError('Username must be 1–30 characters and use only letters, numbers, or underscores.')
       return
     }
 
     if (!isEmail(email)) {
-      setError('Use valid email format.')
-      return
-    }
-
-    if (!isUsername(username)) {
-      setError('Username must be 1–30 characters in length and contain only letters, numbers, or underscores.')
+      setError('Use a valid email format (e.g., you@example.com).')
       return
     }
 
@@ -120,6 +110,7 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
               name="username"
               type="text"
               placeholder="janedoe"
+              autoComplete="username"
               title="Usernames cannot contain @"
               required
             />
