@@ -486,6 +486,38 @@ async def update_leetcode_stats(data: LeetCodeUpdateRequest):
         "leetcodeProfile": solved
     }
 
+
+@app.get(
+    "/users/{id}/refresh-points",
+    response_description="Refresh a user's points from their linked LeetCode profile",
+    response_model=UserModel,
+    response_model_by_alias=False,
+)
+async def refresh_user_points(id: str):
+    user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+
+    lc_username = user.get("lcUsername")
+    if not lc_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User has not linked a LeetCode profile.",
+        )
+
+    profile = fetch_leetcode_profile(lc_username)
+    if profile is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"LeetCode user {lc_username} not found")
+
+    await award_user_points(user, profile)
+
+    refreshed_user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not refreshed_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found after refresh")
+
+    refreshed_user["_id"] = str(refreshed_user["_id"])
+    return refreshed_user
+
 #creating a new tourny. a tourny has a name, pass, start time, end time
 # and the participants
 @app.post(

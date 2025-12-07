@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import styles from './Tournaments.module.css'
 import homeStyles from './Home2.module.css'
 import {
-  API_BASE_URL,
   createTournament,
   fetchTournaments,
   joinTournament,
   type Tournament,
   type TournamentParticipant,
 } from './api/tournaments'
+import { fetchUser, refreshUserPoints } from './api/users'
 
 type TournamentsProps = {
   onBackToDashboard?: () => void
@@ -98,22 +98,38 @@ function Tournaments({
 
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id')
-    if (storedUserId) {
-      setUserId(storedUserId)
-      const loadUser = async () => {
+    if (storedUserId) setUserId(storedUserId)
+  }, [])
+
+  useEffect(() => {
+    if (!userId) return
+
+    let cancelled = false
+
+    const loadUser = async () => {
+      try {
+        const data = await refreshUserPoints(userId)
+        if (cancelled) return
+        setUserPoints(typeof data.points === 'number' ? data.points : 0)
+        setUserName(data.username ?? 'Player')
+      } catch (error) {
+        console.error('Could not refresh user points', error)
         try {
-          const response = await fetch(`${API_BASE_URL}/users/${storedUserId}`)
-          if (!response.ok) return
-          const data = await response.json()
+          const data = await fetchUser(userId)
+          if (cancelled) return
           setUserPoints(typeof data.points === 'number' ? data.points : 0)
           setUserName(data.username ?? 'Player')
-        } catch {
-          //best-effort load
+        } catch (fallbackError) {
+          console.error('Could not load user', fallbackError)
         }
       }
-      loadUser()
     }
-  }, [])
+
+    loadUser()
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
 
   const loadTournaments = async () => {
     if (!userId) {
@@ -126,6 +142,13 @@ function Tournaments({
       const data = await fetchTournaments(userId)
       const normalized = data.map(normalizeTournament)
       setTournaments(sortByStart(normalized))
+      try {
+        const updatedUser = await fetchUser(userId)
+        setUserPoints(typeof updatedUser.points === 'number' ? updatedUser.points : 0)
+        setUserName(updatedUser.username ?? 'Player')
+      } catch (userError) {
+        console.error('Could not update user points after loading tournaments', userError)
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not load tournaments.'
       setError(message)

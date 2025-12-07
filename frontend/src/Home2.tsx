@@ -3,8 +3,7 @@ import styles from './Home2.module.css'
 import { tracks, type LessonNode } from './Lessons.tsx'
 import type { SkillLevelOption } from './SkillLevel.tsx'
 import { fetchTournaments, type Tournament, type TournamentParticipant } from './api/tournaments'
-
-const API_BASE_URL = 'http://localhost:8000'
+import { fetchUser, refreshUserPoints } from './api/users'
 
 type LadderEntry = {
   rank: number
@@ -94,27 +93,44 @@ function Home2({
 
   useEffect(() => {
     const userId = localStorage.getItem('user_id')
+    if (userId) {
+      setUserId(userId)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!userId) return
 
-    setUserId(userId)
+    let cancelled = false
+    let intervalId: number | null = null
 
     const loadUser = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/users/${userId}`)
-        if (!response.ok) {
-          console.error('Failed to fetch user', await response.text())
-          return
-        }
-        const data = await response.json()
+        const data = await refreshUserPoints(userId)
+        if (cancelled) return
         setProfileName(data.username ?? 'Player')
         setPoints(typeof data.points === 'number' ? data.points : 0)
       } catch (error) {
-        console.error('Could not load user', error)
+        console.error('Could not refresh user points', error)
+        try {
+          const data = await fetchUser(userId)
+          if (cancelled) return
+          setProfileName(data.username ?? 'Player')
+          setPoints(typeof data.points === 'number' ? data.points : 0)
+        } catch (fallbackError) {
+          console.error('Could not load user', fallbackError)
+        }
       }
     }
 
     loadUser()
-  }, [])
+    intervalId = window.setInterval(loadUser, 60000)
+
+    return () => {
+      cancelled = true
+      if (intervalId !== null) window.clearInterval(intervalId)
+    }
+  }, [userId])
 
   useEffect(() => {
     if (!userId) return
