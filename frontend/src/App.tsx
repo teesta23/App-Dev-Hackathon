@@ -11,7 +11,6 @@ import SkillLevel, { type SkillLevelOption } from './SkillLevel.tsx'
 import Tournaments from './Tournaments.tsx'
 import Room from './Room.tsx'
 import About from './About.tsx'
-import Store from './Store.tsx'
 import competeFriendsImg from '../images/tourney.png'
 import codeImg from '../images/coding.png'
 import motivatedImg from '../images/motivated.png'
@@ -65,8 +64,7 @@ const [view, setView] = useState<
   'settings' |
   'tournaments' |
   'lessons' |
-  'room' |
-  'store'
+  'room' 
 >('landing')
   const [skillLevel, setSkillLevel] = useState<SkillLevelOption | null>(null)
   const [, setLeetcodeUsername] = useState<string>('')
@@ -80,14 +78,14 @@ const [view, setView] = useState<
         onGoToTournaments={() => setView('tournaments')}
         onGoToLessons={() => setView('lessons')}
         onGoToRoom={() => setView('room')}
-        onGoToStore={() => setView('store')}
+        //onGoToStore={() => setView('store')}
         onLogout={() => setView('landing')}
       />
     )
   }
-  if (view === 'store') {
-  return <Store onBackToDashboard={() => setView('dashboard')} />
-}
+//   if (view === 'store') {
+//   return <Store onBackToDashboard={() => setView('dashboard')} />
+// }
 
   if (view === 'lessons') {
     return (
