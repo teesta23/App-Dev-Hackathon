@@ -320,9 +320,13 @@ function Room({
     if (!dragMoved && (Math.abs(newX - startX) > 0.3 || Math.abs(newY - startY) > 0.3)) {
       setDragMoved(true)
     }
-    setItems((prev) =>
-      prev.map((itm) => (itm.id === draggingId ? { ...itm, x: newX, y: newY, placed: true } : itm)),
-    )
+    setItems((prev) => {
+      const next = prev.map((itm) =>
+        itm.id === draggingId ? { ...itm, x: newX, y: newY, placed: true } : itm,
+      )
+      itemsRef.current = next
+      return next
+    })
   }
 
   const handlePointerUp = (event?: React.PointerEvent<Element>) => {
@@ -330,7 +334,8 @@ function Room({
     const moved = dragMoved
     setDraggingId(null)
     if (moved) {
-      void persistLayout(itemsRef.current)
+      const latest = itemsRef.current
+      void persistLayout(latest)
     }
     if (event) {
       event.currentTarget.releasePointerCapture?.(event.pointerId)
