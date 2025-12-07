@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import homeStyles from './Home2.module.css'
 import styles from './Room.module.css'
 import showerbot from '../images/showerbot.png'
@@ -29,7 +29,9 @@ type CatalogItem = {
   description: string
   vibe: string
   image: string
-  position: CSSProperties
+  width: number
+  defaultX: number
+  defaultY: number
   zIndex?: number
   defaultOwned?: boolean
 }
@@ -45,7 +47,9 @@ const roomCatalog: CatalogItem[] = [
     vibe: 'baseline',
     image: dirtyShowerImg,
     defaultOwned: true,
-    position: { left: '6%', bottom: '110px', width: '36%' },
+    width: 36,
+    defaultX: 12,
+    defaultY: 56,
     zIndex: 2,
   },
   {
@@ -55,7 +59,9 @@ const roomCatalog: CatalogItem[] = [
     description: 'new porcelain fix to finally ditch the grime.',
     vibe: 'glow up',
     image: bathtubImg,
-    position: { right: '6%', bottom: '78px', width: '42%' },
+    width: 42,
+    defaultX: 72,
+    defaultY: 62,
     zIndex: 4,
   },
   {
@@ -65,7 +71,9 @@ const roomCatalog: CatalogItem[] = [
     description: 'speed-run your hand washing with a clean basin.',
     vibe: 'fresh start',
     image: sinkImg,
-    position: { left: '8%', bottom: '168px', width: '24%' },
+    width: 24,
+    defaultX: 20,
+    defaultY: 62,
     zIndex: 5,
   },
   {
@@ -75,7 +83,9 @@ const roomCatalog: CatalogItem[] = [
     description: 'warm base so ShowerBot never steps onto cold tile.',
     vibe: 'cozy landing',
     image: rugImg,
-    position: { left: '26%', bottom: '12px', width: '48%' },
+    width: 48,
+    defaultX: 50,
+    defaultY: 86,
     zIndex: 1,
   },
   {
@@ -85,7 +95,9 @@ const roomCatalog: CatalogItem[] = [
     description: 'glow-up lighting for post-game selfies.',
     vibe: 'confidence',
     image: mirrorImg,
-    position: { left: '10%', top: '48px', width: '24%' },
+    width: 24,
+    defaultX: 18,
+    defaultY: 20,
     zIndex: 3,
   },
   {
@@ -95,7 +107,9 @@ const roomCatalog: CatalogItem[] = [
     description: 'pump lo-fi while decorating or grinding.',
     vibe: 'lo-fi mode',
     image: speakerImg,
-    position: { left: '32%', top: '32px', width: '16%' },
+    width: 16,
+    defaultX: 38,
+    defaultY: 18,
     zIndex: 6,
   },
   {
@@ -105,7 +119,9 @@ const roomCatalog: CatalogItem[] = [
     description: 'soft glow for chill-down time after ladders.',
     vibe: 'chill mode',
     image: candleImg,
-    position: { right: '30%', bottom: '220px', width: '10%' },
+    width: 10,
+    defaultX: 64,
+    defaultY: 40,
     zIndex: 5,
   },
   {
@@ -115,7 +131,9 @@ const roomCatalog: CatalogItem[] = [
     description: 'personal hype coach floating by the tub.',
     vibe: 'ShowerBot buddy',
     image: rubberDuckImg,
-    position: { right: '26%', bottom: '156px', width: '12%' },
+    width: 12,
+    defaultX: 62,
+    defaultY: 70,
     zIndex: 6,
   },
 ]
@@ -126,12 +144,16 @@ const hydrateRoomItems = (roomItems?: RoomItemState[]): RoomItem[] => {
     const saved = savedById.get(item.id)
     const owned = saved?.owned ?? Boolean(item.defaultOwned)
     const placed = saved?.placed ?? owned
-    return { ...item, owned, placed }
+    const x = typeof saved?.x === 'number' ? saved.x : item.defaultX
+    const y = typeof saved?.y === 'number' ? saved.y : item.defaultY
+    return { ...item, owned, placed, x, y }
   })
 }
 
 const toPayload = (items: RoomItem[]): RoomItemState[] =>
-  items.map((item) => ({ id: item.id, owned: item.owned, placed: item.placed }))
+  items.map((item) => ({ id: item.id, owned: item.owned, placed: item.placed, x: item.x, y: item.y }))
+
+const clampPercent = (value: number) => Math.min(100, Math.max(0, value))
 
 function Room({
   onBackToDashboard,
@@ -150,6 +172,40 @@ function Room({
   const [purchasingId, setPurchasingId] = useState<string | null>(null)
   const [showShop, setShowShop] = useState(false)
   const [showInventory, setShowInventory] = useState(false)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const [dragMoved, setDragMoved] = useState(false)
+  const sceneRef = useRef<HTMLDivElement | null>(null)
+  const itemsRef = useRef<RoomItem[]>(items)
+
+  const persistLayout = useCallback(
+    async (nextItems: RoomItem[]) => {
+      if (!userId) {
+        setError('Log in to save your layout changes.')
+        return
+      }
+      setSaving(true)
+      try {
+        const updated = await saveRoomLayout(userId, toPayload(nextItems))
+        setPoints(typeof updated.points === 'number' ? updated.points : points)
+        setItems(hydrateRoomItems(updated.roomItems))
+        setError(null)
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setError(err.message || 'Could not save your layout right now.')
+        } else {
+          setError('Could not save your layout right now.')
+        }
+      } finally {
+        setSaving(false)
+      }
+    },
+    [points, userId],
+  )
+
+  useEffect(() => {
+    itemsRef.current = items
+  }, [items])
 
   const loadUser = useCallback(async (id: string) => {
     setLoading(true)
@@ -179,6 +235,18 @@ function Room({
     setUserId(stored)
     void loadUser(stored)
   }, [loadUser])
+
+  const getPointerPercent = useCallback(
+    (event: React.PointerEvent<Element>) => {
+      const rect = sceneRef.current?.getBoundingClientRect()
+      if (!rect) return null
+      return {
+        x: ((event.clientX - rect.left) / rect.width) * 100,
+        y: ((event.clientY - rect.top) / rect.height) * 100,
+      }
+    },
+    [],
+  )
 
   const ownedItems = useMemo(() => items.filter((item) => item.owned), [items])
   const shopItems = useMemo(() => items.filter((item) => !item.owned), [items])
@@ -222,27 +290,50 @@ function Room({
     const previous = items
     const next = items.map((item) => (item.id === id ? { ...item, placed: !item.placed } : item))
     setItems(next)
-
-    if (!userId) {
-      setError('Log in to save your layout changes.')
-      return
-    }
-
-    setSaving(true)
-    try {
-      const updated = await saveRoomLayout(userId, toPayload(next))
-      setPoints(typeof updated.points === 'number' ? updated.points : points)
-      setItems(hydrateRoomItems(updated.roomItems))
-      setError(null)
-    } catch (err) {
+    await persistLayout(next).catch(() => {
       setItems(previous)
-      if (err instanceof ApiError) {
-        setError(err.message || 'Could not save your layout right now.')
-      } else {
-        setError('Could not save your layout right now.')
-      }
-    } finally {
-      setSaving(false)
+    })
+  }
+
+  const handlePointerDown = (item: RoomItem) => (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!item.placed) return
+    const coords = getPointerPercent(event)
+    if (!coords) return
+    const currentX = typeof item.x === 'number' ? item.x : item.defaultX
+    const currentY = typeof item.y === 'number' ? item.y : item.defaultY
+    setDragOffset({ x: coords.x - currentX, y: coords.y - currentY })
+    setDraggingId(item.id)
+    setDragMoved(false)
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingId) return
+    const coords = getPointerPercent(event)
+    if (!coords) return
+    const dragged = itemsRef.current.find((itm) => itm.id === draggingId)
+    if (!dragged) return
+    const newX = clampPercent(coords.x - dragOffset.x)
+    const newY = clampPercent(coords.y - dragOffset.y)
+    const startX = typeof dragged.x === 'number' ? dragged.x : dragged.defaultX
+    const startY = typeof dragged.y === 'number' ? dragged.y : dragged.defaultY
+    if (!dragMoved && (Math.abs(newX - startX) > 0.3 || Math.abs(newY - startY) > 0.3)) {
+      setDragMoved(true)
+    }
+    setItems((prev) =>
+      prev.map((itm) => (itm.id === draggingId ? { ...itm, x: newX, y: newY, placed: true } : itm)),
+    )
+  }
+
+  const handlePointerUp = (event?: React.PointerEvent<Element>) => {
+    if (!draggingId) return
+    const moved = dragMoved
+    setDraggingId(null)
+    if (moved) {
+      void persistLayout(itemsRef.current)
+    }
+    if (event) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId)
     }
   }
 
@@ -350,7 +441,13 @@ function Room({
             </div>
           </div>
 
-          <div className={styles.roomScene}>
+          <div
+            className={styles.roomScene}
+            ref={sceneRef}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
             {!showShop && !showInventory ? (
               <div className={styles.cornerButtons}>
                 <button
@@ -396,8 +493,18 @@ function Room({
                 key={item.id}
                 className={styles.roomItem}
                 type="button"
-                style={{ ...item.position, zIndex: item.zIndex ?? 3 }}
-                onClick={() => togglePlacement(item.id)}
+                style={{
+                  left: `${item.x ?? item.defaultX}%`,
+                  top: `${item.y ?? item.defaultY}%`,
+                  width: `${item.width}%`,
+                  zIndex: item.zIndex ?? 3,
+                }}
+                onPointerDown={handlePointerDown(item)}
+                onPointerUp={handlePointerUp}
+                onClick={() => {
+                  if (draggingId || dragMoved) return
+                  void togglePlacement(item.id)
+                }}
                 title={item.placed ? 'Click to stash' : 'Click to place'}
               >
                 <img className={styles.itemImage} src={item.image} alt={item.name} />

@@ -26,6 +26,8 @@ export type RoomItemState = {
   id: string
   owned: boolean
   placed: boolean
+  x?: number
+  y?: number
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {

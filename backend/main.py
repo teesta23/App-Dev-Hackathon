@@ -112,6 +112,8 @@ class RoomItemModel(BaseModel):
     id: str
     owned: bool = False
     placed: bool = False
+    x: float | None = Field(default=None, ge=0, le=100)
+    y: float | None = Field(default=None, ge=0, le=100)
 
 class RoomItemsPayload(BaseModel):
     items: list[RoomItemModel]
@@ -191,14 +193,14 @@ STREAK_SAVE_PRICING = {
 }
 
 ROOM_CATALOG: dict[str, dict] = {
-    "dirtyshower": {"cost": 0, "default_owned": True},
-    "bathtub": {"cost": 420, "default_owned": False},
-    "candle": {"cost": 140, "default_owned": False},
-    "mirror": {"cost": 260, "default_owned": False},
-    "rubberduck": {"cost": 90, "default_owned": False},
-    "rug": {"cost": 180, "default_owned": False},
-    "sink": {"cost": 240, "default_owned": False},
-    "speaker": {"cost": 220, "default_owned": False},
+    "dirtyshower": {"cost": 0, "default_owned": True, "x": 12.0, "y": 56.0},
+    "bathtub": {"cost": 420, "default_owned": False, "x": 72.0, "y": 62.0},
+    "candle": {"cost": 140, "default_owned": False, "x": 64.0, "y": 40.0},
+    "mirror": {"cost": 260, "default_owned": False, "x": 18.0, "y": 20.0},
+    "rubberduck": {"cost": 90, "default_owned": False, "x": 62.0, "y": 70.0},
+    "rug": {"cost": 180, "default_owned": False, "x": 50.0, "y": 86.0},
+    "sink": {"cost": 240, "default_owned": False, "x": 20.0, "y": 62.0},
+    "speaker": {"cost": 220, "default_owned": False, "x": 38.0, "y": 18.0},
 }
 
 def default_room_items() -> list[dict]:
@@ -207,6 +209,8 @@ def default_room_items() -> list[dict]:
             "id": item_id,
             "owned": bool(meta.get("default_owned", False)),
             "placed": bool(meta.get("default_owned", False)),
+            "x": float(meta.get("x", 50.0)),
+            "y": float(meta.get("y", 50.0)),
         }
         for item_id, meta in ROOM_CATALOG.items()
     ]
@@ -221,6 +225,8 @@ def normalize_room_items(room_items: list[dict] | None) -> list[dict]:
                 "id": item_id,
                 "owned": bool(item.get("owned", False)),
                 "placed": bool(item.get("placed", False)),
+                "x": clamp_percent(item.get("x", ROOM_CATALOG[item_id].get("x", 50.0))),
+                "y": clamp_percent(item.get("y", ROOM_CATALOG[item_id].get("y", 50.0))),
             }
 
     normalized: list[dict] = []
@@ -232,9 +238,15 @@ def normalize_room_items(room_items: list[dict] | None) -> list[dict]:
                 "id": item_id,
                 "owned": existing.get("owned", owned_default),
                 "placed": existing.get("placed", owned_default),
+                "x": clamp_percent(existing.get("x", meta.get("x", 50.0))),
+                "y": clamp_percent(existing.get("y", meta.get("y", 50.0))),
             }
         )
     return normalized
+
+
+def clamp_percent(value: float) -> float:
+    return max(0.0, min(100.0, float(value)))
 
 #score calculation based on deltas from when the participant joined
 def calculate_score(participant: dict) -> int:
@@ -692,7 +704,15 @@ async def purchase_room_item(id: str, purchase: RoomPurchaseRequest):
     updated_room = []
     for item in room_items:
         if item["id"] == item_id:
-            updated_room.append({**item, "owned": True, "placed": True})
+            updated_room.append(
+                {
+                    **item,
+                    "owned": True,
+                    "placed": True,
+                    "x": clamp_percent(item_meta.get("x", item.get("x", 50.0))),
+                    "y": clamp_percent(item_meta.get("y", item.get("y", 50.0))),
+                }
+            )
         else:
             updated_room.append(item)
 
@@ -733,7 +753,13 @@ async def save_room_layout(id: str, payload: RoomItemsPayload):
         candidate = incoming.get(item["id"])
         if candidate and item.get("owned"):
             updated_room.append(
-                {"id": item["id"], "owned": True, "placed": bool(candidate.placed)}
+                {
+                    "id": item["id"],
+                    "owned": True,
+                    "placed": bool(candidate.placed),
+                    "x": clamp_percent(candidate.x if candidate.x is not None else item.get("x", 50.0)),
+                    "y": clamp_percent(candidate.y if candidate.y is not None else item.get("y", 50.0)),
+                }
             )
         else:
             updated_room.append(item)
