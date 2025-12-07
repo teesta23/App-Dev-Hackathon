@@ -30,6 +30,7 @@ type CatalogItem = {
   vibe: string
   image: string
   position: CSSProperties
+  zIndex?: number
   defaultOwned?: boolean
 }
 
@@ -44,7 +45,8 @@ const roomCatalog: CatalogItem[] = [
     vibe: 'baseline',
     image: dirtyShowerImg,
     defaultOwned: true,
-    position: { right: '42px', bottom: '122px', width: '340px' },
+    position: { left: '6%', bottom: '110px', width: '36%' },
+    zIndex: 2,
   },
   {
     id: 'bathtub',
@@ -53,7 +55,8 @@ const roomCatalog: CatalogItem[] = [
     description: 'new porcelain fix to finally ditch the grime.',
     vibe: 'glow up',
     image: bathtubImg,
-    position: { right: '24px', bottom: '102px', width: '360px' },
+    position: { right: '6%', bottom: '78px', width: '42%' },
+    zIndex: 4,
   },
   {
     id: 'sink',
@@ -62,7 +65,8 @@ const roomCatalog: CatalogItem[] = [
     description: 'speed-run your hand washing with a clean basin.',
     vibe: 'fresh start',
     image: sinkImg,
-    position: { left: '42px', bottom: '182px', width: '210px' },
+    position: { left: '8%', bottom: '168px', width: '24%' },
+    zIndex: 5,
   },
   {
     id: 'rug',
@@ -71,7 +75,8 @@ const roomCatalog: CatalogItem[] = [
     description: 'warm base so ShowerBot never steps onto cold tile.',
     vibe: 'cozy landing',
     image: rugImg,
-    position: { left: '34%', bottom: '12px', width: '420px' },
+    position: { left: '26%', bottom: '12px', width: '48%' },
+    zIndex: 1,
   },
   {
     id: 'mirror',
@@ -80,7 +85,8 @@ const roomCatalog: CatalogItem[] = [
     description: 'glow-up lighting for post-game selfies.',
     vibe: 'confidence',
     image: mirrorImg,
-    position: { left: '74px', top: '74px', width: '220px' },
+    position: { left: '10%', top: '48px', width: '24%' },
+    zIndex: 3,
   },
   {
     id: 'speaker',
@@ -89,7 +95,8 @@ const roomCatalog: CatalogItem[] = [
     description: 'pump lo-fi while decorating or grinding.',
     vibe: 'lo-fi mode',
     image: speakerImg,
-    position: { left: '236px', top: '38px', width: '140px' },
+    position: { left: '32%', top: '32px', width: '16%' },
+    zIndex: 6,
   },
   {
     id: 'candle',
@@ -98,7 +105,8 @@ const roomCatalog: CatalogItem[] = [
     description: 'soft glow for chill-down time after ladders.',
     vibe: 'chill mode',
     image: candleImg,
-    position: { right: '148px', bottom: '230px', width: '88px' },
+    position: { right: '30%', bottom: '220px', width: '10%' },
+    zIndex: 5,
   },
   {
     id: 'rubberduck',
@@ -107,7 +115,8 @@ const roomCatalog: CatalogItem[] = [
     description: 'personal hype coach floating by the tub.',
     vibe: 'ShowerBot buddy',
     image: rubberDuckImg,
-    position: { right: '210px', bottom: '176px', width: '84px' },
+    position: { right: '26%', bottom: '156px', width: '12%' },
+    zIndex: 6,
   },
 ]
 
@@ -387,7 +396,7 @@ function Room({
                 key={item.id}
                 className={styles.roomItem}
                 type="button"
-                style={item.position}
+                style={{ ...item.position, zIndex: item.zIndex ?? 3 }}
                 onClick={() => togglePlacement(item.id)}
                 title={item.placed ? 'Click to stash' : 'Click to place'}
               >
