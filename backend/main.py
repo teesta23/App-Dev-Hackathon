@@ -68,6 +68,7 @@ class UserModel(BaseModel):
     email: EmailStr = Field(...)
     password: str = Field(...)
     points: int = Field(default=0)
+    streakSaves: int = Field(default=0)
     lcUsername: str | None = None
     leetcodeProfile: dict | None = None
     avatar: str | None = None
@@ -81,6 +82,7 @@ class UpdateUserModel(BaseModel):
     email: EmailStr | None = None
     password: str | None = None
     points: int | None = None
+    streakSaves: int | None = None
     lcUsername: str | None = None
     leetcodeProfile: dict | None = None
     avatar: str | None = None
@@ -100,6 +102,10 @@ class LeetCodeUpdateRequest(BaseModel):
 class LeetCodeUpdateResponse(BaseModel):
     lcUsername: str
     leetcodeProfile: dict
+
+
+class PurchaseStreakSaveRequest(BaseModel):
+    count: int = Field(..., ge=1, le=3)
 
 class TournamentParticipant(BaseModel):
     id: str
@@ -162,6 +168,12 @@ POINT_VALUES = {
     "easy": 10,
     "medium": 20,
     "hard": 30,
+}
+
+STREAK_SAVE_PRICING = {
+    1: 120,
+    2: 260,
+    3: 480,
 }
 
 #score calculation based on deltas from when the participant joined
@@ -245,6 +257,24 @@ async def award_user_points(user: dict, latest_profile: dict) -> int:
     return total_gain
 
 
+def ensure_user_defaults(user: dict) -> dict:
+    user.setdefault("points", 0)
+    user.setdefault("streakSaves", 0)
+    return user
+
+
+async def consume_streak_save(user_id: ObjectId) -> bool:
+    """
+    Atomically consume a streak save if the user has one available.
+    """
+    result = await users_collection.find_one_and_update(
+        {"_id": user_id, "streakSaves": {"$gt": 0}},
+        {"$inc": {"streakSaves": -1}},
+        return_document=ReturnDocument.AFTER,
+    )
+    return result is not None
+
+
 def build_participant_from_profile(user: dict, profile: dict) -> dict:
     return {
         "id": str(user["_id"]),
@@ -273,25 +303,37 @@ async def refresh_tournament(tournament: dict) -> dict:
         previous_total = participant.get("currentTotalSolved", participant.get("initialTotalSolved", 0))
         user = await users_collection.find_one({"_id": ObjectId(participant["id"])})
         latest_profile = None
+        save_used = False
+        streak_broken = False
 
         if user and user.get("lcUsername"):
+            user = ensure_user_defaults(user)
             latest_profile = fetch_leetcode_profile(user["lcUsername"])
             if latest_profile:
                 participant["lcUsername"] = user["lcUsername"]
                 await award_user_points(user, latest_profile)
                 participant = apply_profile_to_participant(participant, latest_profile)
             elif should_check_streak:
-                streak_survived = False
+                streak_broken = True
 
         if should_check_streak and latest_profile:
             if latest_profile["totalSolved"] <= previous_total:
-                streak_survived = False
+                streak_broken = True
         elif should_check_streak and not latest_profile:
             #if we cannot fetch data, treat it as a broken streak for safety
+            streak_broken = True
+
+        if streak_broken and user:
+            save_used = await consume_streak_save(user["_id"])
+            streak_broken = not save_used
+
+        if streak_broken:
             streak_survived = False
 
         #ensure score is present even if we did not fetch an update
         participant.setdefault("score", calculate_score(participant))
+        if save_used:
+            participant["streakSaveUsedOn"] = today
         updated_participants.append(participant)
 
     updated_participants.sort(key=lambda p: p.get("score", 0), reverse=True)
@@ -359,6 +401,7 @@ async def register_user(user: UserModel):
 
     new_user = user.model_dump(by_alias=True, exclude=["id"])
     new_user["email"] = normalized_email
+    new_user.setdefault("streakSaves", 0)
     result = await users_collection.insert_one(new_user)
     new_user["_id"] = str(result.inserted_id)
 
@@ -392,7 +435,7 @@ async def get_user(id: str):
         user := await users_collection.find_one({"_id": ObjectId(id)})
     ) is not None:
         user["_id"] = str(user["_id"])
-        return user
+        return ensure_user_defaults(user)
     
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
@@ -413,7 +456,7 @@ async def login_user(credentials: LoginRequest):
         )
 
     user["_id"] = str(user["_id"])
-    return user
+    return ensure_user_defaults(user)
 
 #updating a user
 #can be used for updating settings
@@ -441,12 +484,12 @@ async def update_user(id: str, user: UpdateUserModel):
             return_document=ReturnDocument.AFTER,
         )
         if update_result is not None:
-            return update_result
+            return ensure_user_defaults(update_result)
         else:
             raise HTTPException(status_code=404, detail=f"User {id} not found")
         
     if (existing_user := await users_collection.find_one({"_id": id})) is not None:
-        return existing_user
+        return ensure_user_defaults(existing_user)
     
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
@@ -516,7 +559,41 @@ async def refresh_user_points(id: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found after refresh")
 
     refreshed_user["_id"] = str(refreshed_user["_id"])
-    return refreshed_user
+    return ensure_user_defaults(refreshed_user)
+
+
+@app.post(
+    "/users/{id}/streak-saves",
+    response_description="Purchase streak saves with points",
+    response_model=UserModel,
+    response_model_by_alias=False,
+)
+async def purchase_streak_saves(id: str, purchase: PurchaseStreakSaveRequest):
+    user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+
+    cost = STREAK_SAVE_PRICING.get(purchase.count)
+    if cost is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported streak save quantity.",
+        )
+
+    updated = await users_collection.find_one_and_update(
+        {"_id": ObjectId(id), "points": {"$gte": cost}},
+        {"$inc": {"points": -cost, "streakSaves": purchase.count}},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Not enough points to buy streak saves.",
+        )
+
+    updated["_id"] = str(updated["_id"])
+    return ensure_user_defaults(updated)
 
 #creating a new tourny. a tourny has a name, pass, start time, end time
 # and the participants

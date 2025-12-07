@@ -653,6 +653,41 @@ font-family: Inter;
 font-style: normal;
 line-height: 92%; /* 33.12px */
 }
+
+.topbarStats {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.topbarSave {
+  flex-shrink: 0;
+  width: 180px;
+  height: 84px;
+  padding: 16px 18px 12px;
+  border-radius: 24px;
+  background: linear-gradient(140deg, #4f2f79 0%, #7a4faf 100%);
+  box-shadow: 0 0 40px 0 rgba(63, 35, 97, 0.26);
+  text-align: center;
+  color: #f4ebff;
+  font-family: Inter, sans-serif;
+  line-height: 92%;
+}
+
+.saveNumber {
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.saveLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 6px;
+  color: #d6c3f6;
+}
 .topbar .profileInfo {
   align-items: flex-start;
 }

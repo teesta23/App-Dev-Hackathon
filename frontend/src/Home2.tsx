@@ -84,6 +84,7 @@ function Home2({
   const [profileName, setProfileName] = useState('Player')
   const [points, setPoints] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
+  const [streakSaves, setStreakSaves] = useState(0)
   const [bestTournament, setBestTournament] = useState<{
     tournament: Tournament
     rank: number
@@ -110,6 +111,7 @@ function Home2({
         if (cancelled) return
         setProfileName(data.username ?? 'Player')
         setPoints(typeof data.points === 'number' ? data.points : 0)
+        setStreakSaves(typeof data.streakSaves === 'number' ? data.streakSaves : 0)
       } catch (error) {
         console.error('Could not refresh user points', error)
         try {
@@ -117,6 +119,7 @@ function Home2({
           if (cancelled) return
           setProfileName(data.username ?? 'Player')
           setPoints(typeof data.points === 'number' ? data.points : 0)
+          setStreakSaves(typeof data.streakSaves === 'number' ? data.streakSaves : 0)
         } catch (fallbackError) {
           console.error('Could not load user', fallbackError)
         }
@@ -357,9 +360,15 @@ function Home2({
             </div>
           </div>
 
-          <div className={styles.topbarPoints}>
-            <div className={styles.pointsNumber}>{points}</div>
-            <div className={styles.pointsLabel}>CURRENT POINTS</div>
+          <div className={styles.topbarStats}>
+            <div className={styles.topbarPoints}>
+              <div className={styles.pointsNumber}>{points}</div>
+              <div className={styles.pointsLabel}>CURRENT POINTS</div>
+            </div>
+            <div className={styles.topbarSave}>
+              <div className={styles.saveNumber}>{streakSaves}</div>
+              <div className={styles.saveLabel}>STREAK SAVES</div>
+            </div>
           </div>
         </div>
       </div>

@@ -8,7 +8,7 @@ import {
   type Tournament,
   type TournamentParticipant,
 } from './api/tournaments'
-import { fetchUser, refreshUserPoints } from './api/users'
+import { fetchUser, purchaseStreakSaves, refreshUserPoints } from './api/users'
 
 type TournamentsProps = {
   onBackToDashboard?: () => void
@@ -31,9 +31,9 @@ type LadderEntry = {
 const DEFAULT_DURATION_HOURS = 24 * 7
 
 const streakOptions = [
-  { label: 'single day cover', cost: 120, desc: 'Protect 1 missed day. No streak drop.' },
-  { label: 'weekend shield (2 days)', cost: 260, desc: 'Covers back-to-back misses.' },
-  { label: 'auto-protect pack (3 uses)', cost: 480, desc: 'Auto-applies to your next misses.' },
+  { label: 'single day cover', cost: 120, desc: 'Protect 1 missed day. No streak drop.', count: 1 },
+  { label: 'weekend shield (2 days)', cost: 260, desc: 'Covers back-to-back misses.', count: 2 },
+  { label: 'auto-protect pack (3 uses)', cost: 480, desc: 'Auto-applies to your next misses.', count: 3 },
 ]
 
 const tournamentKey = (tournament: Tournament) => tournament._id ?? tournament.id ?? tournament.name
@@ -95,6 +95,10 @@ function Tournaments({
   const [userId, setUserId] = useState<string | null>(null)
   const [userPoints, setUserPoints] = useState(0)
   const [userName, setUserName] = useState('Player')
+  const [streakSaves, setStreakSaves] = useState(0)
+  const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null)
+  const [purchasingCount, setPurchasingCount] = useState<number | null>(null)
+  const [purchaseError, setPurchaseError] = useState(false)
 
   useEffect(() => {
     const storedUserId = localStorage.getItem('user_id')
@@ -112,6 +116,7 @@ function Tournaments({
         if (cancelled) return
         setUserPoints(typeof data.points === 'number' ? data.points : 0)
         setUserName(data.username ?? 'Player')
+        setStreakSaves(typeof data.streakSaves === 'number' ? data.streakSaves : 0)
       } catch (error) {
         console.error('Could not refresh user points', error)
         try {
@@ -119,6 +124,7 @@ function Tournaments({
           if (cancelled) return
           setUserPoints(typeof data.points === 'number' ? data.points : 0)
           setUserName(data.username ?? 'Player')
+          setStreakSaves(typeof data.streakSaves === 'number' ? data.streakSaves : 0)
         } catch (fallbackError) {
           console.error('Could not load user', fallbackError)
         }
@@ -146,6 +152,7 @@ function Tournaments({
         const updatedUser = await fetchUser(userId)
         setUserPoints(typeof updatedUser.points === 'number' ? updatedUser.points : 0)
         setUserName(updatedUser.username ?? 'Player')
+        setStreakSaves(typeof updatedUser.streakSaves === 'number' ? updatedUser.streakSaves : 0)
       } catch (userError) {
         console.error('Could not update user points after loading tournaments', userError)
       }
@@ -180,6 +187,29 @@ function Tournaments({
     })
     return filled
   }, [tournaments, userId])
+
+  const handlePurchase = async (count: number) => {
+    if (!userId) {
+      setPurchaseError(true)
+      setPurchaseMessage('Log in to buy streak saves.')
+      return
+    }
+    setPurchaseMessage(null)
+    setPurchasingCount(count)
+    setPurchaseError(false)
+    try {
+      const updatedUser = await purchaseStreakSaves(userId, count)
+      setUserPoints(typeof updatedUser.points === 'number' ? updatedUser.points : 0)
+      setStreakSaves(typeof updatedUser.streakSaves === 'number' ? updatedUser.streakSaves : 0)
+      setPurchaseMessage(`Purchased ${count} streak save${count > 1 ? 's' : ''}.`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not purchase streak saves.'
+      setPurchaseMessage(message)
+      setPurchaseError(true)
+    } finally {
+      setPurchasingCount(null)
+    }
+  }
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -328,9 +358,15 @@ function Tournaments({
 
       <main className={styles.content}>
         <div className={styles.headerRow}>
-          <div className={`${homeStyles.topbarPoints} ${styles.pointsBadge}`}>
-            <div className={homeStyles.pointsNumber}>{userPoints}</div>
-            <div className={homeStyles.pointsLabel}>CURRENT POINTS</div>
+          <div className={styles.statStack}>
+            <div className={`${homeStyles.topbarPoints} ${styles.pointsBadge}`}>
+              <div className={homeStyles.pointsNumber}>{userPoints}</div>
+              <div className={homeStyles.pointsLabel}>CURRENT POINTS</div>
+            </div>
+            <div className={styles.saveBadge}>
+              <div className={styles.saveNumber}>{streakSaves}</div>
+              <div className={styles.saveLabel}>STREAK SAVES READY</div>
+            </div>
           </div>
 
           <div className={styles.headerCopy}>
@@ -546,11 +582,20 @@ function Tournaments({
                   <div className={styles.panelKicker}>saves</div>
                   <div className={styles.panelTitle}>buy streak saves</div>
                 </div>
-                <div className={styles.balancePill}>{userPoints} pts</div>
+                <div className={styles.balanceRow}>
+                  <div className={styles.balancePill}>{userPoints} pts</div>
+                  <div className={`${styles.balancePill} ${styles.savePill}`}>{streakSaves} saves ready</div>
+                </div>
               </div>
               <p className={styles.helper}>
                 Use points to auto-cover missed days and keep your streak alive across every tournament.
               </p>
+              <div className={styles.helperStrong}>
+                {streakSaves === 1 ? '1 streak save ready to apply.' : `${streakSaves} streak saves ready to apply.`}
+              </div>
+              {purchaseMessage ? (
+                <div className={purchaseError ? styles.errorText : styles.helperStrong}>{purchaseMessage}</div>
+              ) : null}
 
               <div className={styles.streakOptions}>
                 {streakOptions.map((option) => (
@@ -559,8 +604,14 @@ function Tournaments({
                       <div className={styles.streakLabel}>{option.label}</div>
                       <div className={styles.streakDesc}>{option.desc}</div>
                     </div>
-                    <button className={styles.primaryButton} type="button">
-                      <span className={styles.arrowText}>&gt;</span> {option.cost} pts
+                    <button
+                      className={styles.primaryButton}
+                      type="button"
+                      onClick={() => handlePurchase(option.count)}
+                      disabled={purchasingCount !== null}
+                    >
+                      <span className={styles.arrowText}>&gt;</span>{' '}
+                      {purchasingCount === option.count ? 'buying...' : `${option.cost} pts`}
                     </button>
                   </div>
                 ))}

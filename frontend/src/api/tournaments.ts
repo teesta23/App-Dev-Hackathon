@@ -13,6 +13,7 @@ export type TournamentParticipant = {
   initialHardSolved: number
   currentHardSolved: number
   score: number
+  streakSaveUsedOn?: string
 }
 
 export type Tournament = {

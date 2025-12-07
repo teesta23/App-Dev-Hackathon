@@ -6,6 +6,7 @@ export type User = {
   username?: string
   email?: string
   points?: number
+  streakSaves?: number
   lcUsername?: string | null
   leetcodeProfile?: Record<string, unknown> | null
   avatar?: string | null
@@ -35,5 +36,14 @@ export async function fetchUser(userId: string): Promise<User> {
 
 export async function refreshUserPoints(userId: string): Promise<User> {
   const response = await fetch(`${API_BASE_URL}/users/${userId}/refresh-points`)
+  return parseResponse<User>(response)
+}
+
+export async function purchaseStreakSaves(userId: string, count: number): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/streak-saves`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ count }),
+  })
   return parseResponse<User>(response)
 }
