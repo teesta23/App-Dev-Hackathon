@@ -8,7 +8,7 @@ type SignupProps = {
 function Signup({ onBack, onCreate, onLogin }: SignupProps) 
 {
   const [error, setError] = useState<string | null>(null)
-  const isEmail = (em: string) => /\S+@\S+\.\S+/.test(em)
+  const isEmail = (em: string) => /\S+@\S+\.\S/.test(em)
   const isUsername = (un: string) =>  /^[A-Za-z0-9_]{1,30}$/.test(un);
   const passwordsMatch = (password1: string, password2: string) => password1 == password2
 
@@ -20,24 +20,6 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
     const password1 = String(formData.get('password') ?? '').trim()
     const password2 = String(formData.get('re-password') ?? '').trim()
 
-  type FieldError = {
-  loc: string[];   // location of the error, e.g. ["body", "username"]
-  msg: string;     // human-readable message
-  type: string;    // error type, e.g. "value_error"
-  };
-
-const [errors, setErrors] = useState<FieldError[]>([]);
-
-
-    if (isEmail(username)) {
-      setError('Enter email, not username for this field.')
-      return
-    }
-
-    if (isUsername(email)) {
-      setError('Enter username, not email for this field.')
-      return
-    }
 
     if (!isEmail(email))
     {
