@@ -36,3 +36,7 @@ This creates a .venv dir for you in the backend folder.
 
 Now you must run I GOT TIRED AND WENT TO BED I WILL FINISH TMR
 
+
+Leeterboard is a website that allows you to solve leetcode problems with your friends! Using a Leetcode API, we allow you to make tournaments and compete with friends. With our backend, we save points on your account based on how you did on the tournament, and you can use those points to buy different objects for your room.
+
+
