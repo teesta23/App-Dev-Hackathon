@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import styles from './Login.module.css'
+import { setStoredUserId } from './session'
 
 const API_BASE_URL = 'http://localhost:8000'
 
@@ -90,7 +91,7 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
 
       const userId = data._id ?? data.id
       if (userId) {
-        localStorage.setItem('user_id', String(userId))
+        setStoredUserId(String(userId))
       }
 
       onCreate?.()

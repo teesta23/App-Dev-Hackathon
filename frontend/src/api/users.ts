@@ -1,5 +1,14 @@
 import { API_BASE_URL } from './tournaments'
 
+export class ApiError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
 export type User = {
   _id?: string
   id?: string
@@ -23,7 +32,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     const detail = typeof data?.detail === 'string' ? data.detail : response.statusText
-    throw new Error(detail || 'Request failed')
+    throw new ApiError(response.status, detail || 'Request failed')
   }
 
   return data as T

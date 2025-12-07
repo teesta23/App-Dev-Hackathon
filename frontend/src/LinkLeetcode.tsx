@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import styles from './LinkLeetcode.module.css'
 import { updateLeetCodeStats } from './api/leetcode'
+import { getStoredUserId } from './session'
 
 type LinkLeetcodeProps = {
   onBack?: () => void
@@ -17,7 +18,7 @@ function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
     if (!username) return
 
     try {
-      const userId = localStorage.getItem("user_id");
+      const userId = getStoredUserId()
       if(!userId) {
         console.error("No user ID found.")
         return

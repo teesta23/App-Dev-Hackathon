@@ -16,6 +16,7 @@ import codeImg from '../images/coding.png'
 import motivatedImg from '../images/motivated.png'
 import decorateImg from '../images/decorate.png'
 import streakImg from '../images/streak.png'
+import { clearStoredUserId } from './session.ts'
 
 function App() {
   const landingFeatures = [
@@ -51,23 +52,27 @@ function App() {
     },
   ]
 
-const [view, setView] = useState<
-  'landing' |
-  'about' |
-  'login' |
-  'signup' |
-  'link' |
-  'skill' |
-  'dashboard' |
-  'contactLanding' |
-  'contactDashboard' |
-  'settings' |
-  'tournaments' |
-  'lessons' |
-  'room' 
->('landing')
+  const [view, setView] = useState<
+    'landing' |
+    'about' |
+    'login' |
+    'signup' |
+    'link' |
+    'skill' |
+    'dashboard' |
+    'contactLanding' |
+    'contactDashboard' |
+    'settings' |
+    'tournaments' |
+    'lessons' |
+    'room' 
+  >('landing')
   const [skillLevel, setSkillLevel] = useState<SkillLevelOption | null>(null)
   const [, setLeetcodeUsername] = useState<string>('')
+  const handleLogout = () => {
+    clearStoredUserId()
+    setView('landing')
+  }
 
   if (view === 'dashboard') {
     return (
@@ -79,7 +84,7 @@ const [view, setView] = useState<
         onGoToLessons={() => setView('lessons')}
         onGoToRoom={() => setView('room')}
         //onGoToStore={() => setView('store')}
-        onLogout={() => setView('landing')}
+        onLogout={handleLogout}
       />
     )
   }
@@ -96,7 +101,7 @@ const [view, setView] = useState<
         onGoToContact={() => setView('contactDashboard')}
         onGoToSettings={() => setView('settings')}
         onGoToRoom={() => setView('room')}
-        onLogout={() => setView('landing')}
+        onLogout={handleLogout}
       />
     )
   }
@@ -108,7 +113,7 @@ const [view, setView] = useState<
         onGoToSettings={() => setView('settings')}
         onGoToLessons={() => setView('lessons')}
         onGoToRoom={() => setView('room')}
-        onLogout={() => setView('landing')}
+        onLogout={handleLogout}
       />
     )
   }
@@ -118,7 +123,7 @@ const [view, setView] = useState<
       <Contact
         variant="dashboard"
         onBack={() => setView('dashboard')}
-        onLogout={() => setView('landing')}
+        onLogout={handleLogout}
         onGoToSettings={() => setView('settings')}
         onGoToTournaments={() => setView('tournaments')}
         onGoToLessons={() => setView('lessons')}
@@ -130,7 +135,7 @@ const [view, setView] = useState<
     return (
       <Settings
         onBack={() => setView('dashboard')}
-        onLogout={() => setView('landing')}
+        onLogout={handleLogout}
         onGoToSupport={() => setView('contactDashboard')}
         onGoToTournaments={() => setView('tournaments')}
         onGoToLessons={() => setView('lessons')}
@@ -155,7 +160,7 @@ const [view, setView] = useState<
         onGoToTournaments={() => setView('tournaments')}
         onGoToContact={() => setView('contactDashboard')}
         onGoToSettings={() => setView('settings')}
-        onLogout={() => setView('landing')}
+        onLogout={handleLogout}
       />
     )
   }
