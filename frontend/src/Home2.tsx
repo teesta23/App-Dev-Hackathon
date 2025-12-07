@@ -1,4 +1,9 @@
+import { useEffect, useMemo, useState } from 'react'
 import styles from './Home2.module.css'
+import { tracks, type LessonNode } from './Lessons.tsx'
+import type { SkillLevelOption } from './SkillLevel.tsx'
+
+const API_BASE_URL = 'http://localhost:8000'
 
 type Home2Props = {
   skillLevel?: SkillLevelOption | null
@@ -20,14 +25,42 @@ function Home2({
   onGoToRoom,
   onLogout,
 }: Home2Props) {
-  const profileName = 'John Smith'
-  const profileInitials = profileName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
+  const [profileName, setProfileName] = useState('Player')
+  const [points, setPoints] = useState(0)
+
+  useEffect(() => {
+    const userId = localStorage.getItem('user_id')
+    if (!userId) return
+
+    const loadUser = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}`)
+        if (!response.ok) {
+          console.error('Failed to fetch user', await response.text())
+          return
+        }
+        const data = await response.json()
+        setProfileName(data.username ?? 'Player')
+        setPoints(typeof data.points === 'number' ? data.points : 0)
+      } catch (error) {
+        console.error('Could not load user', error)
+      }
+    }
+
+    loadUser()
+  }, [])
+
+  const profileInitials = useMemo(
+    () =>
+      profileName
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase(),
+    [profileName],
+  )
 
   const activeLevel: SkillLevelOption = skillLevel ?? 'intermediate'
   const track = tracks[activeLevel]
@@ -158,17 +191,17 @@ function Home2({
               <div className={styles.topbarAvatar}>
                 {profileInitials}
               </div>
-              <div className={styles.profileInfo}>
-                <div className={styles.profileName}>{profileName}</div>
-              </div>
-            </div>
-
-            <div className={styles.topbarPoints}>
-              <div className={styles.pointsNumber}>2876</div>
-              <div className={styles.pointsLabel}>CURRENT POINTS</div>
+            <div className={styles.profileInfo}>
+              <div className={styles.profileName}>{profileName}</div>
             </div>
           </div>
+
+          <div className={styles.topbarPoints}>
+            <div className={styles.pointsNumber}>{points}</div>
+            <div className={styles.pointsLabel}>CURRENT POINTS</div>
+          </div>
         </div>
+      </div>
 
         <div className={styles.sectionHeaders}>
           <div className={styles.sectionTitleTour}>[this week’s tournaments]</div>
@@ -202,9 +235,9 @@ function Home2({
                 </div>
                 <div className={`${styles.tableRow} ${styles.highlightRow}`}>
                   <span>3</span>
-                  <span>John Smith</span>
+                  <span>{profileName}</span>
                   <span>3</span>
-                  <span>972</span>
+                  <span>{points}</span>
                 </div>
                 <div className={styles.tableRow}>
                   <span>4</span>
@@ -255,5 +288,3 @@ function Home2({
 }
 
 export default Home2
-import { tracks, type LessonNode } from './Lessons.tsx'
-import type { SkillLevelOption } from './SkillLevel.tsx'
