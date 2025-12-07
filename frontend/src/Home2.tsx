@@ -7,6 +7,7 @@ type Home2Props = {
   onGoToTournaments?: () => void
   onGoToLessons?: () => void
   onGoToRoom?: () => void
+  onGoToStore?: () => void
   onLogout?: () => void
 }
 
@@ -17,6 +18,7 @@ function Home2({
   onGoToTournaments,
   onGoToLessons,
   onGoToRoom,
+  onGoToStore,
   onLogout,
 }: Home2Props) {
   const profileName = 'John Smith'
@@ -97,6 +99,21 @@ function Home2({
             <span className={`${styles.icon} ${styles['icon-user']}`} />
             My Room
           </a>
+
+            <a
+              className={styles.navItem}
+              href="#"
+              onClick={(event) => {
+              event.preventDefault()
+              onGoToStore?.()
+            }}
+          >
+            <span className={`${styles.icon} ${styles['icon-store']}`} />
+            Store
+            </a>
+
+
+
         </div>
 
         <div className={styles.footerMenu}>

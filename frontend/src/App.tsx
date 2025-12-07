@@ -11,6 +11,7 @@ import SkillLevel, { type SkillLevelOption } from './SkillLevel.tsx'
 import Tournaments from './Tournaments.tsx'
 import Room from './Room.tsx'
 import About from './About.tsx'
+import Store from './Store.tsx'
 import competeFriendsImg from '../images/tourney.png'
 import codeImg from '../images/coding.png'
 import motivatedImg from '../images/motivated.png'
@@ -51,21 +52,22 @@ function App() {
     },
   ]
 
-  const [view, setView] = useState<
-    | 'landing'
-    | 'about'
-    | 'login'
-    | 'signup'
-    | 'link'
-    | 'skill'
-    | 'dashboard'
-    | 'contactLanding'
-    | 'contactDashboard'
-    | 'settings'
-    | 'tournaments'
-    | 'lessons'
-    | 'room'
-  >('landing')
+const [view, setView] = useState<
+  'landing' |
+  'about' |
+  'login' |
+  'signup' |
+  'link' |
+  'skill' |
+  'dashboard' |
+  'contactLanding' |
+  'contactDashboard' |
+  'settings' |
+  'tournaments' |
+  'lessons' |
+  'room' |
+  'store'
+>('landing')
   const [skillLevel, setSkillLevel] = useState<SkillLevelOption | null>(null)
   const [, setLeetcodeUsername] = useState<string>('')
 
@@ -78,10 +80,15 @@ function App() {
         onGoToTournaments={() => setView('tournaments')}
         onGoToLessons={() => setView('lessons')}
         onGoToRoom={() => setView('room')}
+        onGoToStore={() => setView('store')}
         onLogout={() => setView('landing')}
       />
     )
   }
+  if (view === 'store') {
+  return <Store onBackToDashboard={() => setView('dashboard')} />
+}
+
   if (view === 'lessons') {
     return (
       <Lessons
