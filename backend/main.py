@@ -72,6 +72,7 @@ class UserModel(BaseModel):
     lcUsername: str | None = None
     leetcodeProfile: dict | None = None
     avatar: str | None = None
+    roomItems: list["RoomItemModel"] = Field(default_factory=list)
     model_config = ConfigDict(
         populate_by_name=True,
     )
@@ -106,6 +107,21 @@ class LeetCodeUpdateResponse(BaseModel):
 
 class PurchaseStreakSaveRequest(BaseModel):
     count: int = Field(..., ge=1, le=3)
+
+class RoomItemModel(BaseModel):
+    id: str
+    owned: bool = False
+    placed: bool = False
+    x: float | None = Field(default=None, ge=0, le=100)
+    y: float | None = Field(default=None, ge=0, le=100)
+
+class RoomItemsPayload(BaseModel):
+    items: list[RoomItemModel]
+
+class RoomPurchaseRequest(BaseModel):
+    itemId: str
+
+UserModel.model_rebuild()
 
 class TournamentParticipant(BaseModel):
     id: str
@@ -175,6 +191,62 @@ STREAK_SAVE_PRICING = {
     2: 260,
     3: 480,
 }
+
+ROOM_CATALOG: dict[str, dict] = {
+    "dirtyshower": {"cost": 0, "default_owned": True, "x": 12.0, "y": 56.0},
+    "bathtub": {"cost": 420, "default_owned": False, "x": 72.0, "y": 62.0},
+    "candle": {"cost": 140, "default_owned": False, "x": 64.0, "y": 40.0},
+    "mirror": {"cost": 260, "default_owned": False, "x": 18.0, "y": 20.0},
+    "rubberduck": {"cost": 90, "default_owned": False, "x": 62.0, "y": 70.0},
+    "rug": {"cost": 180, "default_owned": False, "x": 50.0, "y": 86.0},
+    "sink": {"cost": 240, "default_owned": False, "x": 20.0, "y": 62.0},
+    "speaker": {"cost": 220, "default_owned": False, "x": 38.0, "y": 18.0},
+}
+
+def default_room_items() -> list[dict]:
+    return [
+        {
+            "id": item_id,
+            "owned": bool(meta.get("default_owned", False)),
+            "placed": bool(meta.get("default_owned", False)),
+            "x": float(meta.get("x", 50.0)),
+            "y": float(meta.get("y", 50.0)),
+        }
+        for item_id, meta in ROOM_CATALOG.items()
+    ]
+
+
+def normalize_room_items(room_items: list[dict] | None) -> list[dict]:
+    merged: dict[str, dict] = {}
+    for item in room_items or []:
+        item_id = item.get("id")
+        if item_id in ROOM_CATALOG and item_id not in merged:
+            merged[item_id] = {
+                "id": item_id,
+                "owned": bool(item.get("owned", False)),
+                "placed": bool(item.get("placed", False)),
+                "x": clamp_percent(item.get("x", ROOM_CATALOG[item_id].get("x", 50.0))),
+                "y": clamp_percent(item.get("y", ROOM_CATALOG[item_id].get("y", 50.0))),
+            }
+
+    normalized: list[dict] = []
+    for item_id, meta in ROOM_CATALOG.items():
+        existing = merged.get(item_id, {})
+        owned_default = bool(meta.get("default_owned", False))
+        normalized.append(
+            {
+                "id": item_id,
+                "owned": existing.get("owned", owned_default),
+                "placed": existing.get("placed", owned_default),
+                "x": clamp_percent(existing.get("x", meta.get("x", 50.0))),
+                "y": clamp_percent(existing.get("y", meta.get("y", 50.0))),
+            }
+        )
+    return normalized
+
+
+def clamp_percent(value: float) -> float:
+    return max(0.0, min(100.0, float(value)))
 
 #score calculation based on deltas from when the participant joined
 def calculate_score(participant: dict) -> int:
@@ -260,6 +332,7 @@ async def award_user_points(user: dict, latest_profile: dict) -> int:
 def ensure_user_defaults(user: dict) -> dict:
     user.setdefault("points", 0)
     user.setdefault("streakSaves", 0)
+    user["roomItems"] = normalize_room_items(user.get("roomItems"))
     return user
 
 
@@ -402,10 +475,11 @@ async def register_user(user: UserModel):
     new_user = user.model_dump(by_alias=True, exclude=["id"])
     new_user["email"] = normalized_email
     new_user.setdefault("streakSaves", 0)
+    new_user["roomItems"] = default_room_items()
     result = await users_collection.insert_one(new_user)
     new_user["_id"] = str(result.inserted_id)
 
-    return new_user
+    return ensure_user_defaults(new_user)
 
 
 #getting a user
@@ -591,6 +665,113 @@ async def purchase_streak_saves(id: str, purchase: PurchaseStreakSaveRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not enough points to buy streak saves.",
         )
+
+    updated["_id"] = str(updated["_id"])
+    return ensure_user_defaults(updated)
+
+
+@app.post(
+    "/users/{id}/room/purchase",
+    response_description="Purchase a room item with points",
+    response_model=UserModel,
+    response_model_by_alias=False,
+)
+async def purchase_room_item(id: str, purchase: RoomPurchaseRequest):
+    item_id = purchase.itemId
+    item_meta = ROOM_CATALOG.get(item_id)
+    if not item_meta:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown room item.")
+    if item_meta.get("default_owned"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Starter items cannot be purchased.",
+        )
+
+    user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+
+    user = ensure_user_defaults(user)
+    room_items = normalize_room_items(user.get("roomItems"))
+
+    for item in room_items:
+        if item["id"] == item_id and item.get("owned"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You already own this item.",
+            )
+
+    updated_room = []
+    for item in room_items:
+        if item["id"] == item_id:
+            updated_room.append(
+                {
+                    **item,
+                    "owned": True,
+                    "placed": True,
+                    "x": clamp_percent(item_meta.get("x", item.get("x", 50.0))),
+                    "y": clamp_percent(item_meta.get("y", item.get("y", 50.0))),
+                }
+            )
+        else:
+            updated_room.append(item)
+
+    cost = int(item_meta.get("cost", 0))
+    updated = await users_collection.find_one_and_update(
+        {"_id": ObjectId(id), "points": {"$gte": cost}},
+        {"$set": {"roomItems": updated_room}, "$inc": {"points": -cost}},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if updated is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Not enough points to buy this item.",
+        )
+
+    updated["_id"] = str(updated["_id"])
+    return ensure_user_defaults(updated)
+
+
+@app.put(
+    "/users/{id}/room",
+    response_description="Save room layout for a user",
+    response_model=UserModel,
+    response_model_by_alias=False,
+)
+async def save_room_layout(id: str, payload: RoomItemsPayload):
+    user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+
+    user = ensure_user_defaults(user)
+    room_items = normalize_room_items(user.get("roomItems"))
+    incoming = {item.id: item for item in payload.items if item.id in ROOM_CATALOG}
+
+    updated_room: list[dict] = []
+    for item in room_items:
+        candidate = incoming.get(item["id"])
+        if candidate and item.get("owned"):
+            updated_room.append(
+                {
+                    "id": item["id"],
+                    "owned": True,
+                    "placed": bool(candidate.placed),
+                    "x": clamp_percent(candidate.x if candidate.x is not None else item.get("x", 50.0)),
+                    "y": clamp_percent(candidate.y if candidate.y is not None else item.get("y", 50.0)),
+                }
+            )
+        else:
+            updated_room.append(item)
+
+    updated = await users_collection.find_one_and_update(
+        {"_id": ObjectId(id)},
+        {"$set": {"roomItems": updated_room}},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
 
     updated["_id"] = str(updated["_id"])
     return ensure_user_defaults(updated)

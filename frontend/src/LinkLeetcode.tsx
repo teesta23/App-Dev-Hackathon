@@ -1,14 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import styles from './LinkLeetcode.module.css'
 import { updateLeetCodeStats } from './api/leetcode'
+import { getStoredUserId } from './session'
 
 type LinkLeetcodeProps = {
   onBack?: () => void
-  onSkip?: () => void
   onContinue?: (username: string) => void
 }
 
-function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
+function LinkLeetcode({ onBack, onContinue }: LinkLeetcodeProps) {
   const [username, setUsername] = useState('')
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -17,7 +17,7 @@ function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
     if (!username) return
 
     try {
-      const userId = localStorage.getItem("user_id");
+      const userId = getStoredUserId()
       if(!userId) {
         console.error("No user ID found.")
         return
@@ -29,14 +29,6 @@ function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
       console.error("Error updating leetcode stats:", err);
     }
     onContinue?.(username)
-  }
-
-  const handleSkip = () => {
-    if (onSkip) {
-      onSkip()
-      return
-    }
-    onContinue?.('')
   }
 
   return (
@@ -122,9 +114,6 @@ function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
               disabled={!username.trim()}
             >
               <span className={styles.arrowText}>&gt;</span> link &amp; continue
-            </button>
-            <button className={styles.linkButton} type="button" onClick={handleSkip}>
-              skip for now
             </button>
           </div>
         </form>

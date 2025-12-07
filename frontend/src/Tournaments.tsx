@@ -8,7 +8,8 @@ import {
   type Tournament,
   type TournamentParticipant,
 } from './api/tournaments'
-import { fetchUser, purchaseStreakSaves, refreshUserPoints } from './api/users'
+import { ApiError, fetchUser, purchaseStreakSaves, refreshUserPoints } from './api/users'
+import { clearStoredUserId, getStoredUserId } from './session'
 
 type TournamentsProps = {
   onBackToDashboard?: () => void
@@ -99,10 +100,23 @@ function Tournaments({
   const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null)
   const [purchasingCount, setPurchasingCount] = useState<number | null>(null)
   const [purchaseError, setPurchaseError] = useState(false)
+  const resetSession = () => {
+    clearStoredUserId()
+    setUserId(null)
+    setUserPoints(0)
+    setUserName('Player')
+    setStreakSaves(0)
+    setTournaments([])
+    setExpandedLadders({})
+  }
 
   useEffect(() => {
-    const storedUserId = localStorage.getItem('user_id')
-    if (storedUserId) setUserId(storedUserId)
+    const storedUserId = getStoredUserId()
+    if (storedUserId) {
+      setUserId(storedUserId)
+    } else {
+      resetSession()
+    }
   }, [])
 
   useEffect(() => {
@@ -118,6 +132,10 @@ function Tournaments({
         setUserName(data.username ?? 'Player')
         setStreakSaves(typeof data.streakSaves === 'number' ? data.streakSaves : 0)
       } catch (error) {
+        if (error instanceof ApiError && (error.status === 401 || error.status === 404)) {
+          resetSession()
+          return
+        }
         console.error('Could not refresh user points', error)
         try {
           const data = await fetchUser(userId)
@@ -126,6 +144,10 @@ function Tournaments({
           setUserName(data.username ?? 'Player')
           setStreakSaves(typeof data.streakSaves === 'number' ? data.streakSaves : 0)
         } catch (fallbackError) {
+          if (fallbackError instanceof ApiError && (fallbackError.status === 401 || fallbackError.status === 404)) {
+            resetSession()
+            return
+          }
           console.error('Could not load user', fallbackError)
         }
       }

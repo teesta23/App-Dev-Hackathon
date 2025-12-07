@@ -1,5 +1,14 @@
 import { API_BASE_URL } from './tournaments'
 
+export class ApiError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
 export type User = {
   _id?: string
   id?: string
@@ -10,6 +19,15 @@ export type User = {
   lcUsername?: string | null
   leetcodeProfile?: Record<string, unknown> | null
   avatar?: string | null
+  roomItems?: RoomItemState[]
+}
+
+export type RoomItemState = {
+  id: string
+  owned: boolean
+  placed: boolean
+  x?: number
+  y?: number
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -23,7 +41,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     const detail = typeof data?.detail === 'string' ? data.detail : response.statusText
-    throw new Error(detail || 'Request failed')
+    throw new ApiError(response.status, detail || 'Request failed')
   }
 
   return data as T
@@ -57,6 +75,24 @@ export async function updateUser(userId: string, updates: {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
+  })
+  return parseResponse<User>(response)
+}
+
+export async function purchaseRoomItem(userId: string, itemId: string): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/room/purchase`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId }),
+  })
+  return parseResponse<User>(response)
+}
+
+export async function saveRoomLayout(userId: string, items: RoomItemState[]): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/room`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
   })
   return parseResponse<User>(response)
 }
