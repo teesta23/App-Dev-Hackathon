@@ -208,6 +208,43 @@ def apply_profile_to_participant(participant: dict, profile: dict) -> dict:
     return participant
 
 
+async def award_user_points(user: dict, latest_profile: dict) -> int:
+    """
+    Adds account points for newly solved problems since the user's last stored profile.
+    Points are awarded once per newly solved problem across all tournaments.
+    """
+    previous_profile = user.get("leetcodeProfile") or {}
+    baseline = {
+        "easySolved": previous_profile.get("easySolved", latest_profile["easySolved"]),
+        "mediumSolved": previous_profile.get("mediumSolved", latest_profile["mediumSolved"]),
+        "hardSolved": previous_profile.get("hardSolved", latest_profile["hardSolved"]),
+    }
+
+    easy_gain = max(0, latest_profile["easySolved"] - baseline["easySolved"])
+    medium_gain = max(0, latest_profile["mediumSolved"] - baseline["mediumSolved"])
+    hard_gain = max(0, latest_profile["hardSolved"] - baseline["hardSolved"])
+
+    total_gain = (
+        easy_gain * POINT_VALUES["easy"]
+        + medium_gain * POINT_VALUES["medium"]
+        + hard_gain * POINT_VALUES["hard"]
+    )
+
+    if total_gain > 0:
+        new_points = int(user.get("points", 0)) + total_gain
+        await users_collection.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"points": new_points, "leetcodeProfile": latest_profile}},
+        )
+    else:
+        await users_collection.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"leetcodeProfile": latest_profile}},
+        )
+
+    return total_gain
+
+
 def build_participant_from_profile(user: dict, profile: dict) -> dict:
     return {
         "id": str(user["_id"]),
@@ -241,10 +278,7 @@ async def refresh_tournament(tournament: dict) -> dict:
             latest_profile = fetch_leetcode_profile(user["lcUsername"])
             if latest_profile:
                 participant["lcUsername"] = user["lcUsername"]
-                await users_collection.update_one(
-                    {"_id": ObjectId(participant["id"])},
-                    {"$set": {"leetcodeProfile": latest_profile}},
-                )
+                await award_user_points(user, latest_profile)
                 participant = apply_profile_to_participant(participant, latest_profile)
             elif should_check_streak:
                 streak_survived = False
@@ -433,12 +467,15 @@ async def update_leetcode_stats(data: LeetCodeUpdateRequest):
     if solved is None:
         raise HTTPException(status_code=404, detail=f"LeetCode user {lc_username} not found")
 
+    user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User {id} not found")
+
+    await award_user_points(user, solved)
+
     update_result = await users_collection.update_one(
         {"_id": ObjectId(id)},
-        {"$set": {
-            "lcUsername": lc_username,
-            "leetcodeProfile": solved
-        }},
+        {"$set": {"lcUsername": lc_username}},
     )
 
     if update_result.matched_count == 0:
@@ -475,10 +512,7 @@ async def create_tournament(tournament: CreateTournamentRequest):
     if fresh_profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unable to fetch LeetCode profile.")
 
-    await users_collection.update_one(
-        {"_id": ObjectId(tournament.creatorId)},
-        {"$set": {"leetcodeProfile": fresh_profile}},
-    )
+    await award_user_points(creator, fresh_profile)
 
     creator_participant = build_participant_from_profile(creator, fresh_profile)
 
@@ -569,10 +603,7 @@ async def join_tournament(data: JoinTournamentRequest):
     fresh_profile = fetch_leetcode_profile(user["lcUsername"])
     if fresh_profile is None:
         raise HTTPException(status_code=404, detail=f"LeetCode user {user['lcUsername']} not found")
-    await users_collection.update_one(
-        {"_id": ObjectId(data.id)},
-        {"$set": {"leetcodeProfile": fresh_profile}},
-    )
+    await award_user_points(user, fresh_profile)
     
     participant = build_participant_from_profile(user, fresh_profile)
 

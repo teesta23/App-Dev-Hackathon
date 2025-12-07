@@ -2,8 +2,65 @@ import { useEffect, useMemo, useState } from 'react'
 import styles from './Home2.module.css'
 import { tracks, type LessonNode } from './Lessons.tsx'
 import type { SkillLevelOption } from './SkillLevel.tsx'
+import { fetchTournaments, type Tournament, type TournamentParticipant } from './api/tournaments'
 
 const API_BASE_URL = 'http://localhost:8000'
+
+type LadderEntry = {
+  rank: number
+  name: string
+  solvedSinceJoin: number
+  points: number
+  isYou: boolean
+}
+
+const solvedSinceJoin = (participant: TournamentParticipant) =>
+  Math.max(0, (participant.currentTotalSolved ?? 0) - (participant.initialTotalSolved ?? 0))
+
+const buildEntries = (tournament: Tournament, userId: string): { rank: number; entries: LadderEntry[] } | null => {
+  const sorted = [...(tournament.participants ?? [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  const entries = sorted.map((participant, index) => ({
+    rank: index + 1,
+    name: participant.username || participant.lcUsername || 'player',
+    solvedSinceJoin: solvedSinceJoin(participant),
+    points: participant.score ?? 0,
+    isYou: participant.id === userId,
+  }))
+
+  const yourEntry = entries.find((entry) => entry.isYou)
+  if (!yourEntry) return null
+
+  return { rank: yourEntry.rank, entries }
+}
+
+const selectBestTournament = (tournaments: Tournament[], userId: string) => {
+  let best: { tournament: Tournament; rank: number; entries: LadderEntry[] } | null = null
+
+  tournaments.forEach((tournament) => {
+    const candidate = buildEntries(tournament, userId)
+    if (!candidate) return
+
+    const startTime = Date.parse(tournament.startTime ?? '')
+    if (!best) {
+      best = { tournament, rank: candidate.rank, entries: candidate.entries }
+      return
+    }
+
+    if (candidate.rank < best.rank) {
+      best = { tournament, rank: candidate.rank, entries: candidate.entries }
+      return
+    }
+
+    if (candidate.rank === best.rank) {
+      const bestStart = Date.parse(best.tournament.startTime ?? '')
+      if (!Number.isNaN(startTime) && (Number.isNaN(bestStart) || startTime < bestStart)) {
+        best = { tournament, rank: candidate.rank, entries: candidate.entries }
+      }
+    }
+  })
+
+  return best
+}
 
 type Home2Props = {
   skillLevel?: SkillLevelOption | null
@@ -27,10 +84,19 @@ function Home2({
 }: Home2Props) {
   const [profileName, setProfileName] = useState('Player')
   const [points, setPoints] = useState(0)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [bestTournament, setBestTournament] = useState<{
+    tournament: Tournament
+    rank: number
+    entries: Array<{ rank: number; name: string; solvedSinceJoin: number; points: number; isYou: boolean }>
+  } | null>(null)
+  const [tourneyLoading, setTourneyLoading] = useState(false)
 
   useEffect(() => {
     const userId = localStorage.getItem('user_id')
     if (!userId) return
+
+    setUserId(userId)
 
     const loadUser = async () => {
       try {
@@ -49,6 +115,26 @@ function Home2({
 
     loadUser()
   }, [])
+
+  useEffect(() => {
+    if (!userId) return
+
+    const loadBestTournament = async () => {
+      setTourneyLoading(true)
+      try {
+        const tournaments = await fetchTournaments(userId)
+        const best = selectBestTournament(tournaments, userId)
+        setBestTournament(best)
+      } catch (error) {
+        console.error('Could not load tournaments for dashboard', error)
+        setBestTournament(null)
+      } finally {
+        setTourneyLoading(false)
+      }
+    }
+
+    loadBestTournament()
+  }, [userId])
 
   const profileInitials = useMemo(
     () =>
@@ -83,10 +169,69 @@ function Home2({
           <div className={`${styles.lessonStatus} ${styles[lesson.status]}`}>{lesson.status}</div>
         </>
       ) : (
-        <div className={styles.lessonEmpty}>No lesson queued</div>
+          <div className={styles.lessonEmpty}>No lesson queued</div>
       )}
     </div>
   )
+
+  const renderTournamentTable = () => {
+    if (!userId) {
+      return (
+        <div className={styles.tableBody}>
+          <div className={styles.tableRow}>
+            <span>–</span>
+            <span>log in to see tournaments</span>
+            <span>–</span>
+            <span>–</span>
+          </div>
+        </div>
+      )
+    }
+
+    if (tourneyLoading) {
+      return (
+        <div className={styles.tableBody}>
+          <div className={styles.tableRow}>
+            <span>…</span>
+            <span>loading</span>
+            <span>…</span>
+            <span>…</span>
+          </div>
+        </div>
+      )
+    }
+
+    if (!bestTournament) {
+      return (
+        <div className={styles.tableBody}>
+          <div className={styles.tableRow}>
+            <span>–</span>
+            <span>join a tournament to see standings</span>
+            <span>–</span>
+            <span>–</span>
+          </div>
+        </div>
+      )
+    }
+
+    const entries = bestTournament.entries.slice(0, 5)
+
+    return (
+      <div className={styles.tableBody}>
+        {entries.map((entry) => (
+          <div
+            key={`${bestTournament.tournament._id}-${entry.rank}-${entry.name}`}
+            className={`${styles.tableRow} ${entry.isYou ? styles.highlightRow : ''}`}
+          >
+            <span>{entry.rank}</span>
+            <span>{entry.name}</span>
+            <span>{entry.solvedSinceJoin}</span>
+            <span>{entry.points}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className={styles.page}>
@@ -211,7 +356,11 @@ function Home2({
         <div className={styles.mainPanels}>
           <div className={styles.tournamentShell}>
             <div className={styles.tournamentCard}>
-              <div className={styles.tournamentHeader}>example tournament 1</div>
+              <div className={styles.tournamentHeader}>
+                {bestTournament
+                  ? `${bestTournament.tournament.name} (you’re #${bestTournament.rank})`
+                  : 'no tournaments yet'}
+              </div>
 
               <div className={styles.tableWrapper}>
                 <div className={`${styles.tableRow} ${styles.tableHead}`}>
@@ -220,36 +369,13 @@ function Home2({
                   <span>SOLVED TODAY</span>
                   <span>POINTS</span>
                 </div>
-                <div className={styles.tableBody}>
-                  <div className={styles.tableRow}>
-                    <span>1</span>
-                    <span>username</span>
-                    <span>10</span>
-                    <span>2375</span>
-                  </div>
-                <div className={styles.tableRow}>
-                  <span>2</span>
-                  <span>username</span>
-                  <span>5</span>
-                  <span>1032</span>
-                </div>
-                <div className={`${styles.tableRow} ${styles.highlightRow}`}>
-                  <span>3</span>
-                  <span>{profileName}</span>
-                  <span>3</span>
-                  <span>{points}</span>
-                </div>
-                <div className={styles.tableRow}>
-                  <span>4</span>
-                  <span>alex</span>
-                  <span>2</span>
-                  <span>740</span>
-                </div>
+                {renderTournamentTable()}
+              </div>
+
+              <div className={styles.currentStreak}>
+                CURRENT STREAK: {bestTournament ? `${bestTournament.tournament.streak ?? 0} days` : '–'}
               </div>
             </div>
-
-            <div className={styles.currentStreak}>CURRENT STREAK:</div>
-          </div>
           </div>
 
           <div className={styles.lessonsColumn}>
