@@ -331,12 +331,10 @@ function Room({
 
   const handlePointerUp = (event?: React.PointerEvent<Element>) => {
     if (!draggingId) return
-    const moved = dragMoved
     setDraggingId(null)
-    if (moved) {
-      const latest = itemsRef.current
-      void persistLayout(latest)
-    }
+    setDragMoved(false)
+    const latest = itemsRef.current
+    void persistLayout(latest)
     if (event) {
       event.currentTarget.releasePointerCapture?.(event.pointerId)
     }
