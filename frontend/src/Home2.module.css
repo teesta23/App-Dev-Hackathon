@@ -534,6 +534,15 @@ letter-spacing: 0.4px;
   background-size: contain;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='33' viewBox='0 0 36 33' fill='none'><path d='M18 23.375H18.0142' stroke='%23D8B5FF' stroke-width='9.83333' stroke-linecap='round' stroke-linejoin='round'/><path d='M30 11.6875V18.5625C30 23.7479 30 26.3407 28.2426 27.9515C26.4853 29.5625 23.6568 29.5625 18 29.5625C12.3431 29.5625 9.51472 29.5625 7.75735 27.9515C6 26.3407 6 23.7479 6 18.5625V11.6875' stroke='%23D8B5FF' stroke-width='4'/><path d='M33 14.4375L26.4854 8.71128C22.4853 5.19542 20.4854 3.4375 18 3.4375C15.5147 3.4375 13.5147 5.19542 9.51473 8.71128L3 14.4375' stroke='%23D8B5FF' stroke-width='4' stroke-linecap='round'/></svg>");
 }
+.icon-store {
+  width: 36px;
+  height: 33px;
+  display: inline-block;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='33' viewBox='0 0 24 24' fill='none' stroke='%23D8B5FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='9' cy='21' r='1'></circle><circle cx='20' cy='21' r='1'></circle><path d='M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6'></path></svg>");
+}
+
 .icon-bookmark {
   width: 34px;
   height: 34px;
