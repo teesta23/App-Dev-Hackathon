@@ -40,8 +40,6 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
   const passwordError = useMemo(() => {
     const value = password1.trim()
     if (!value) return 'Password is required.'
-    if (value.length < 8) return 'Password must be at least 8 characters.'
-    if (!/[A-Za-z]/.test(value) || !/[0-9]/.test(value)) return 'Include at least one letter and one number.'
     return ''
   }, [password1])
 

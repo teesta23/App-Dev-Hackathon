@@ -27,7 +27,6 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
   const passwordError = useMemo(() => {
     const value = password.trim()
     if (!value) return 'Password is required.'
-    if (value.length < 6) return 'Password must be at least 6 characters.'
     return ''
   }, [password])
 
