@@ -197,6 +197,13 @@
   box-shadow: 0 14px 28px rgba(106, 74, 142, 0.16);
 }
 
+.fieldError {
+  color: #bb1c1c;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+
 .errorText {
   color: #bb1c1c;
   font-weight: 500;

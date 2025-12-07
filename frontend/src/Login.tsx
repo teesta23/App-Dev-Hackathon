@@ -14,19 +14,33 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
   const [submitting, setSubmitting] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [emailTouched, setEmailTouched] = useState(false)
+  const [passwordTouched, setPasswordTouched] = useState(false)
 
-  const emailIsValid = useMemo(() => /\S+@\S+\.\S+/.test(email.trim()), [email])
-  const passwordIsValid = password.trim().length > 0
-  const formIsValid = emailIsValid && passwordIsValid
+  const emailError = useMemo(() => {
+    const value = email.trim()
+    if (!value) return 'Email is required.'
+    if (!/\S+@\S+\.\S+/.test(value)) return 'Enter a valid email address.'
+    return ''
+  }, [email])
+
+  const passwordError = useMemo(() => {
+    const value = password.trim()
+    if (!value) return 'Password is required.'
+    if (value.length < 6) return 'Password must be at least 6 characters.'
+    return ''
+  }, [password])
+
+  const formIsValid = !emailError && !passwordError
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const trimmedEmail = email.trim()
-    const trimmedPassword = password.trim()
+    setEmailTouched(true)
+    setPasswordTouched(true)
 
     if (!formIsValid) {
-      setError('Enter a valid email and password.')
+      setError(emailError || passwordError || 'Enter a valid email and password.')
       return
     }
 
@@ -34,6 +48,9 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
     setSubmitting(true)
 
     try {
+      const trimmedEmail = email.trim()
+      const trimmedPassword = password.trim()
+
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,10 +120,13 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
               placeholder="you@example.com"
               autoComplete="email"
               value={email}
+              aria-invalid={Boolean(emailTouched && emailError)}
+              onBlur={() => setEmailTouched(true)}
               onChange={(event) => setEmail(event.target.value)}
               required
             />
           </label>
+          {emailTouched && emailError ? <div className={styles.fieldError}>{emailError}</div> : null}
           <label className={styles.inputGroup}>
             <span>password</span>
             <input
@@ -115,10 +135,13 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
               placeholder="••••••••"
               autoComplete="current-password"
               value={password}
+              aria-invalid={Boolean(passwordTouched && passwordError)}
+              onBlur={() => setPasswordTouched(true)}
               onChange={(event) => setPassword(event.target.value)}
               required
             />
           </label>
+          {passwordTouched && passwordError ? <div className={styles.fieldError}>{passwordError}</div> : null}
 
           {error ? <div className={styles.errorText}>{error}</div> : null}
 
