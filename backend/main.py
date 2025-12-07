@@ -1,6 +1,11 @@
 import os
 from typing import List, Optional
 
+#for leetcode graphql
+import requests
+from datetime import datetime
+
+
 from fastapi import FastAPI, HTTPException, status
 from fastapi.responses import Response
 from pydantic import ConfigDict, BaseModel, Field, EmailStr
@@ -29,6 +34,7 @@ app = FastAPI()
 client = AsyncMongoClient(MONGO_URL)
 db = client[MONGO_DB]
 users_collection = db.get_collection("users")
+tournaments_collection = db.get_collection("tournaments")
 
 origins = [
     "http://localhost:5173",
@@ -49,7 +55,8 @@ class UserModel(BaseModel):
     username: str = Field(...)
     email: EmailStr = Field(...)
     password: str = Field(...)
-    lcUsername: str = Field(...)
+    lcUsername: str | None = None
+    leetcodeProfile: dict | None = None
     model_config = ConfigDict(
         populate_by_name=True,
     )
@@ -59,27 +66,88 @@ class UpdateUserModel(BaseModel):
     email: EmailStr | None = None
     password: str | None = None
     lcUsername: str | None = None
+    leetcodeProfile: dict | None = None
     model_config = ConfigDict(
         json_encoders={ObjectId: str},
     )
 
-
-class RegisterRequest(BaseModel):
-    username: str
-    email: str
-    password: str
-
-class LeetCodeLinkRequest(BaseModel):
+class LeetCodeUpdateRequest(BaseModel):
+    id: str
     lcUsername: str
 
-class LoginRequest(BaseModel):
-    username: str
-    password: str
 
-class HomeRequest(BaseModel):
+class LeetCodeUpdateResponse(BaseModel):
+    lcUsername: str
+    leetcodeProfile: dict
+
+class TournamentParticipant(BaseModel):
+    id: str
     username: str
-    points: int = 0
-    #tournaments: 
+    initialTotalSolved: int
+    currentTotalSolved: int
+    initialEasySolved: int
+    currentEasySolved: int
+    initialMediumSolved: int
+    currentMediumSolved: int
+    initialHardSolved: int
+    currentHardSolved: int
+    score: int
+
+class TournamentModel(BaseModel):
+    id: PyObjectId | None = Field(alias="_id", default=None)
+    name: str = Field(...)
+    password: str = Field(...)
+    startTime: str = Field(...)
+    endTime: str = Field(...)
+    participants: list[TournamentParticipant] = []
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+
+class JoinTournamentRequest(BaseModel):
+    id: str
+    tournamentName: str
+    tournamentPassword: str
+
+LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql"
+
+LEETCODE_QUERY = """
+query getUserProfile($username: String!) {
+  matchedUser(username: $username) {
+    username
+    submitStats {
+      acSubmissionNum {
+        difficulty
+        count
+      }
+    }
+  }
+}
+"""
+
+def fetch_leetcode_profile(username: str):
+    response = requests.post(
+        LEETCODE_GRAPHQL_URL,
+        json={"query": LEETCODE_QUERY, "variables": {"username": username}},
+        headers={"Content-Type": "application/json"},
+        timeout=10
+    )
+
+    data = response.json()
+
+    if "data" not in data or data["data"]["matchedUser"] is None:
+        return None
+
+    stats = data["data"]["matchedUser"]["submitStats"]["acSubmissionNum"]
+
+    return {
+        "totalSolved": stats[0]["count"],
+        "easySolved": stats[1]["count"],
+        "mediumSolved": stats[2]["count"],
+        "hardSolved": stats[3]["count"],
+        "lastUpdated": datetime.utcnow().isoformat(),
+    }
 
 #adding a user
 @app.post(
@@ -140,3 +208,97 @@ async def update_user(id: str, user: UpdateUserModel):
         return existing_user
     
     raise HTTPException(status_code=404, detail=f"User {id} not found")
+
+@app.put(
+    "/leetcode/update",
+    response_description="Retrieve and update user's LeetCode stats",
+    response_model=LeetCodeUpdateResponse,
+    response_model_by_alias=False,
+)
+async def update_leetcode_stats(data: LeetCodeUpdateRequest):
+    id = data.id
+    lc_username = data.lcUsername
+
+    solved = fetch_leetcode_profile(lc_username)
+
+    if solved is None:
+        raise HTTPException(status_code=404, detail=f"LeetCode user {lc_username} not found")
+
+    update_result = await users_collection.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": {
+            "lcUsername": lc_username,
+            "leetcodeProfile": solved
+        }},
+    )
+
+    if update_result.matched_count == 0:
+        raise HTTPException(status_code=404, detail=f"User {id} not found")
+
+    return {
+        "lcUsername": lc_username,
+        "leetcodeProfile": solved
+    }
+
+@app.post(
+    "/tournaments/",
+    response_description="Create a tournament",
+    response_model=TournamentModel,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,
+)
+async def create_tournament(tournament: TournamentModel):
+    new_tournament = tournament.model_dump(by_alias=True, exclude=["id"])
+    result = await tournaments_collection.insert_one(new_tournament)
+    new_tournament["_id"] = result.inserted_id
+
+    return new_tournament
+    
+@app.put(
+    "/tournaments/",
+    response_description="Join a tournament by name & password",
+    response_model=TournamentModel,
+    response_model_by_alias=False,
+)
+async def join_tournament(data: JoinTournamentRequest):
+    
+    #lookup tourny that matches user/pass combo
+    tournament = await tournaments_collection.find_one({
+        "name": data.tournamentName,
+        "password": data.tournamentPassword
+    })
+
+    if not tournament:
+        raise HTTPException(status_code=404, detail=f"Invalid tournament name/password.")
+    
+    tournament_id = tournament["_id"]
+    
+    #user needs to have linked their lc profile
+    user = await users_collection.find_one({"_id": ObjectId(data.id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    if not user.get("leetCodeProfile"):
+        raise HTTPException(status_code=400, detail="User has not linked their LeetCode Profile.")
+    
+    initialTotalSolved = user["leetcodeProfile"]["totalSolved"]
+    initialEasySolved = user["leetcodeProfile"]["easySolved"]
+    initialMediumSolved = user["leetcodeProfile"]["MediumSolved"]
+    initialHardSolved = user["leetcodeProfile"]["hardSolved"]
+    participant = {
+        "id": data.id,
+        "username": user["username"],
+        "initialTotalSolved": initialTotalSolved,
+        "currentTotalSolved": initialTotalSolved,
+        "initialEasySolved": initialEasySolved,
+        "currentEasySolved": initialEasySolved,
+        "initialMediumSolved": initialMediumSolved,
+        "currentMediumSolved": initialMediumSolved,
+        "initialHardSolved": initialHardSolved,
+        "currentHardSolved": initialHardSolved,
+        "score": 0,
+    }
+
+    updated = await tournaments_collection.find_one_and_update(
+        {"_id": ObjectId()}
+    )
