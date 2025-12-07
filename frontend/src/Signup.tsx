@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import styles from './Login.module.css'
 
 const API_BASE_URL = 'http://localhost:8000'
@@ -12,30 +12,41 @@ type SignupProps = {
 function Signup({ onBack, onCreate, onLogin }: SignupProps) {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [password1, setPassword1] = useState('')
+  const [password2, setPassword2] = useState('')
 
   const isEmail = (em: string) => /\S+@\S+\.\S+/.test(em)
   const isUsername = (un: string) => /^[A-Za-z0-9_]{1,30}$/.test(un)
   const passwordsMatch = (password1: string, password2: string) => password1 === password2
+  const usernameValid = useMemo(() => isUsername(username.trim()), [username])
+  const emailValid = useMemo(() => isEmail(email.trim()), [email])
+  const passwordsValid = useMemo(
+    () => password1.trim().length > 0 && password2.trim().length > 0 && passwordsMatch(password1, password2),
+    [password1, password2],
+  )
+  const formIsValid = usernameValid && emailValid && passwordsValid
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    const username = String(formData.get('username') ?? '').trim()
-    const email = String(formData.get('email') ?? '').trim()
-    const password1 = String(formData.get('password') ?? '').trim()
-    const password2 = String(formData.get('re-password') ?? '').trim()
 
-    if (!isUsername(username)) {
+    const trimmedUsername = username.trim()
+    const trimmedEmail = email.trim()
+    const trimmedPassword1 = password1.trim()
+    const trimmedPassword2 = password2.trim()
+
+    if (!isUsername(trimmedUsername)) {
       setError('Username must be 1–30 characters and use only letters, numbers, or underscores.')
       return
     }
 
-    if (!isEmail(email)) {
+    if (!isEmail(trimmedEmail)) {
       setError('Use a valid email format (e.g., you@example.com).')
       return
     }
 
-    if (!passwordsMatch(password1, password2)) {
+    if (!passwordsMatch(trimmedPassword1, trimmedPassword2)) {
       setError('Passwords do not match.')
       return
     }
@@ -47,9 +58,9 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username,
-          email,
-          password: password1,
+          username: trimmedUsername,
+          email: trimmedEmail,
+          password: trimmedPassword1,
         }),
       })
 
@@ -111,6 +122,8 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
               type="text"
               placeholder="janedoe"
               autoComplete="username"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
               title="Usernames cannot contain @"
               required
             />
@@ -122,6 +135,8 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
               type="email"
               placeholder="you@example.com"
               autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required />
           </label>
           <label className={styles.inputGroup}>
@@ -131,6 +146,8 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
               type="password"
               placeholder="••••••••"
               autoComplete="new-password"
+              value={password1}
+              onChange={(event) => setPassword1(event.target.value)}
               required />
           </label>
           <label className={styles.inputGroup}>
@@ -140,10 +157,12 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps) {
               type="password"
               placeholder="••••••••"
               autoComplete="new-password"
+              value={password2}
+              onChange={(event) => setPassword2(event.target.value)}
               required />
           </label>
           {error ? <div className={styles.errorText}>{error}</div> : null}
-          <button className={styles.primaryButton} type="submit" disabled={submitting}>
+          <button className={styles.primaryButton} type="submit" disabled={submitting || !formIsValid}>
             <span className={styles.arrowText}>&gt;</span> {submitting ? 'working...' : 'create account'}
           </button>
           <div className={styles.footerRow}>

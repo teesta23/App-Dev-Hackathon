@@ -368,8 +368,8 @@ function Tournaments({
                     const entries = ladderEntries[key] ?? []
                     const showAll = expandedLadders[key]
                     const visibleEntries = showAll ? entries : entries.slice(0, 5)
-                    const streakLabel =
-                      tour.streak && tour.streak > 0 ? `${tour.streak}-day streak` : 'streak reset'
+                    const streakValue = typeof tour.streak === 'number' ? tour.streak : 0
+                    const streakLabel = `${streakValue}-day streak`
 
                     return (
                       <div key={key} className={styles.standingCard}>

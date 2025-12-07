@@ -13,7 +13,7 @@ from typing import List, Optional
 
 #for leetcode graphql
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 
@@ -191,6 +191,11 @@ def serialize_tournament(tournament: dict) -> dict:
         tournament["lastChecked"] = None
     if "participants" not in tournament:
         tournament["participants"] = []
+    #normalize times to include timezone for frontend parsing
+    for key in ("startTime", "endTime"):
+        ts = tournament.get(key)
+        if isinstance(ts, str) and ts and "Z" not in ts and "+" not in ts:
+            tournament[key] = f"{ts}Z"
     return tournament
 
 
@@ -477,7 +482,7 @@ async def create_tournament(tournament: CreateTournamentRequest):
 
     creator_participant = build_participant_from_profile(creator, fresh_profile)
 
-    start_time = datetime.utcnow()
+    start_time = datetime.now(timezone.utc)
     end_time = start_time + timedelta(hours=tournament.durationHours or 24)
 
     new_tournament = {

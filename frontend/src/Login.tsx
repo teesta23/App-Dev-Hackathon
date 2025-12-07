@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import styles from './Login.module.css'
 
 const API_BASE_URL = 'http://localhost:8000'
@@ -12,12 +12,23 @@ type LoginProps = {
 function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  const emailIsValid = useMemo(() => /\S+@\S+\.\S+/.test(email.trim()), [email])
+  const passwordIsValid = password.trim().length > 0
+  const formIsValid = emailIsValid && passwordIsValid
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const formData = new FormData(event.currentTarget)
-    const email = String(formData.get('email') ?? '').trim()
-    const password = String(formData.get('password') ?? '').trim()
+
+    const trimmedEmail = email.trim()
+    const trimmedPassword = password.trim()
+
+    if (!formIsValid) {
+      setError('Enter a valid email and password.')
+      return
+    }
 
     setError(null)
     setSubmitting(true)
@@ -26,7 +37,7 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: trimmedEmail, password: trimmedPassword }),
       })
 
       const data = await response.json()
@@ -86,7 +97,15 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
 
           <label className={styles.inputGroup}>
             <span>email</span>
-            <input name="email" type="email" placeholder="you@example.com" autoComplete="email" required />
+            <input
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
           </label>
           <label className={styles.inputGroup}>
             <span>password</span>
@@ -95,13 +114,15 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
               type="password"
               placeholder="••••••••"
               autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
               required
             />
           </label>
 
           {error ? <div className={styles.errorText}>{error}</div> : null}
 
-          <button className={styles.primaryButton} type="submit" disabled={submitting}>
+          <button className={styles.primaryButton} type="submit" disabled={submitting || !formIsValid}>
             <span className={styles.arrowText}>&gt;</span> {submitting ? 'working...' : 'log in'}
           </button>
 
