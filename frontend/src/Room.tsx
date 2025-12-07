@@ -507,16 +507,6 @@ function Room({
                 title={item.placed ? 'Click to stash' : 'Click to place'}
               >
                 <img className={styles.itemImage} src={item.image} alt={item.name} />
-                <span
-                  className={styles.itemTag}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    if (draggingId || dragMoved) return
-                    void togglePlacement(item.id)
-                  }}
-                >
-                  {item.name}
-                </span>
               </button>
             ))}
           </div>

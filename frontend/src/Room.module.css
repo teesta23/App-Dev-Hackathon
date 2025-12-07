@@ -282,15 +282,6 @@
   filter: drop-shadow(0 14px 24px rgba(83, 55, 122, 0.28));
 }
 
-.itemTag {
-  display: inline-block;
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: #fff5fb;
-  border: 1px solid #eed7ff;
-  box-shadow: 0 6px 12px rgba(83, 55, 122, 0.16);
-}
-
 .cornerButtons {
   position: absolute;
   top: 12px;
