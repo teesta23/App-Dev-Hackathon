@@ -688,12 +688,15 @@ async def join_tournament(data: JoinTournamentRequest):
     
     try:
         start_time = datetime.fromisoformat(tournament["startTime"])
-        if datetime.utcnow() - start_time > timedelta(days=1):
+        if start_time.tzinfo is None:
+            start_time = start_time.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        if now - start_time > timedelta(days=1):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Tournaments can only be joined in the first 24 hours after they start.",
             )
-    except (KeyError, ValueError):
+    except (KeyError, ValueError, TypeError):
         pass
 
     tournament_id = tournament["_id"]
