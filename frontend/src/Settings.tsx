@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import styles from './Settings.module.css'
 import homeStyles from './Home2.module.css'
+import { updateUser } from './api/users'
 
 type SettingsProps = {
   onBack?: () => void
@@ -12,34 +13,123 @@ type SettingsProps = {
 }
 
 function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments, onGoToLessons, onGoToRoom }: SettingsProps) {
-  const [username, setUsername] = useState('John Smith')
-  const [leetcodeHandle, setLeetcodeHandle] = useState('john_smith')
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [originalUsername, setOriginalUsername] = useState('User')
+  const [originalEmail, setOriginalEmail] = useState('')
+  const [username, setUsername] = useState('User')
+  const [email, setEmail] = useState('')
+  const [password1, setPassword1] = useState('')
+  const [password2, setPassword2] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [usernameTouched, setUsernameTouched] = useState(false)
+  const [emailTouched, setEmailTouched] = useState(false)
+  const [passwordTouched, setPasswordTouched] = useState(false)
+  const [confirmTouched, setConfirmTouched] = useState(false)
 
-  const initials = useMemo(() => {
-    const parts = username.trim().split(/\s+/)
-    const letters = parts.slice(0, 2).map((part) => part[0]).join('')
-    return letters || 'U'
-  }, [username])
-
-  const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setAvatarPreview((prev) => {
-        if (prev) URL.revokeObjectURL(prev)
-        return URL.createObjectURL(file)
-      })
-    }
-  }
-
+  // Load user data on mount
   useEffect(() => {
-    return () => {
-      if (avatarPreview) URL.revokeObjectURL(avatarPreview)
+    const loadUser = async () => {
+      try {
+        const userId = localStorage.getItem('user_id')
+        if (!userId) return
+        const response = await fetch(`http://localhost:8000/users/${userId}`)
+        if (response.ok) {
+          const user = await response.json()
+          setOriginalUsername(user.username || 'User')
+          setUsername(user.username || 'User')
+          setOriginalEmail(user.email || '')
+          setEmail(user.email || '')
+        }
+      } catch (err) {
+        console.error('Failed to load user data:', err)
+      }
     }
-  }, [avatarPreview])
+    loadUser()
+  }, [])
 
-  const handleSave = (event: FormEvent<HTMLFormElement>) => {
+  const usernameError = useMemo(() => {
+    const value = username.trim()
+    if (value && value !== originalUsername) {
+      if (value.length < 3) return 'Username must be at least 3 characters.'
+      if (value.length > 30) return 'Username cannot exceed 30 characters.'
+      if (!/^[A-Za-z0-9_]+$/.test(value)) return 'Use only letters, numbers, or underscores.'
+    }
+    return ''
+  }, [username, originalUsername])
+
+  const emailError = useMemo(() => {
+    const value = email.trim()
+    if (value && value !== originalEmail) {
+      if (!/\S+@\S+\.\S+/.test(value)) return 'Enter a valid email address.'
+    }
+    return ''
+  }, [email, originalEmail])
+
+  const passwordError = useMemo(() => {
+    if (password1.length === 0) return ''
+    return ''
+  }, [password1])
+
+  const confirmError = useMemo(() => {
+    if (!password1 && !password2) return ''
+    if (password1 && !password2) return 'Please re-enter your password.'
+    if (password1 && password2 && password1 !== password2) return 'Passwords must match.'
+    return ''
+  }, [password1, password2])
+
+  const hasChanges = username !== originalUsername || email !== originalEmail || password1 !== ''
+  const formIsValid = !usernameError && !emailError && !passwordError && !confirmError
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setUsernameTouched(true)
+    setEmailTouched(true)
+    setPasswordTouched(true)
+    setConfirmTouched(true)
+
+    if (!formIsValid) {
+      setError(usernameError || emailError || passwordError || confirmError || 'Please fix the highlighted fields.')
+      return
+    }
+
+    if (!hasChanges) {
+      setError('No changes to save.')
+      return
+    }
+
+    setError(null)
+    setSuccess(null)
+    setSubmitting(true)
+
+    try {
+      const userId = localStorage.getItem('user_id')
+      if (!userId) {
+        setError('User not logged in.')
+        return
+      }
+
+      const updates: { username?: string; email?: string; password?: string } = {}
+      if (username !== originalUsername) updates.username = username.trim()
+      if (email !== originalEmail) updates.email = email.trim().toLowerCase()
+      if (password1 !== '') updates.password = password1.trim()
+
+      await updateUser(userId, updates)
+
+      // Update original values after successful save
+      setOriginalUsername(username)
+      setOriginalEmail(email)
+      setPassword1('')
+      setPassword2('')
+      setPasswordTouched(false)
+      setSuccess('Profile updated successfully!')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update profile.'
+      setError(message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const renderSidebar = () => (
@@ -124,20 +214,20 @@ function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments, onGoToLe
               profile <span className={styles.titleAccent}>[settings]</span>
             </h1>
             <p className={styles.subtitle}>
-              Update the essentials: your username, your picture, and the LeetCode account tied to your crew.
+              Update the essentials: your username, your email, or your password.
             </p>
           </div>
           <div className={styles.headerActions}>
             <button className={styles.secondaryButton} type="button" onClick={onBack}>
               back to dashboard
             </button>
-            <button className={styles.primaryButton} type="button">
+            <button className={styles.primaryButton} type="submit" form="settings-form" disabled={submitting || !hasChanges}>
               <span className={styles.arrowText}>&gt;</span> save changes
             </button>
           </div>
         </div>
 
-        <form className={styles.settingsGrid} onSubmit={handleSave}>
+        <form className={styles.settingsGrid} id="settings-form" onSubmit={handleSave}>
           <section className={`${styles.card} ${styles.profileCard}`}>
             <div className={styles.cardHead}>
               <div>
@@ -147,20 +237,8 @@ function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments, onGoToLe
             </div>
 
             <div className={styles.profileStack}>
-              <div className={styles.avatarColumn}>
-                <div className={styles.avatarShell}>
-                  {avatarPreview ? (
-                    <img className={styles.avatarImage} src={avatarPreview} alt="Profile preview" />
-                  ) : (
-                    <div className={styles.avatarInitials}>{initials}</div>
-                  )}
-                </div>
-                <label className={styles.uploadButton}>
-                  update photo
-                  <input className={styles.fileInput} type="file" accept="image/*" onChange={handleAvatarChange} />
-                </label>
-                <p className={styles.helper}>JPG or PNG, under 5MB.</p>
-              </div>
+              {error && <div style={{ color: 'red', marginBottom: '16px', padding: '8px', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>{error}</div>}
+              {success && <div style={{ color: 'green', marginBottom: '16px', padding: '8px', backgroundColor: '#e6ffe6', borderRadius: '4px' }}>{success}</div>}
 
               <div className={styles.formGrid}>
                 <label className={`${styles.inputGroup} ${styles.fullWidth}`}>
@@ -169,24 +247,59 @@ function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments, onGoToLe
                     name="username"
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
-                    placeholder="John Smith"
+                    onBlur={() => setUsernameTouched(true)}
+                    placeholder="john_smith"
+                    disabled={submitting}
+                    type="text"
                   />
+                  {usernameTouched && usernameError && <p style={{ color: 'red', fontSize: '0.85em', marginTop: '4px' }}>{usernameError}</p>}
                 </label>
-
-                <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
-                  <span>linked leetcode</span>
-                  <div className={styles.leetcodeRow}>
-                    <input
-                      name="leetcode"
-                      value={leetcodeHandle}
-                      onChange={(event) => setLeetcodeHandle(event.target.value)}
-                      placeholder="@username"
-                    />
-                    <button className={styles.primaryButton} type="button">
-                      <span className={styles.arrowText}>&gt;</span> sync
-                    </button>
-                  </div>
-                </div>
+              </div>
+              <div className={styles.formGrid}>
+                <label className={`${styles.inputGroup} ${styles.fullWidth}`}>
+                  <span>email</span>
+                  <input
+                    name="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    onBlur={() => setEmailTouched(true)}
+                    placeholder="user@email.com"
+                    disabled={submitting}
+                    type="email"
+                  />
+                  {emailTouched && emailError && <p style={{ color: 'red', fontSize: '0.85em', marginTop: '4px' }}>{emailError}</p>}
+                </label>
+              </div>
+              <div className={styles.formGrid}>
+                <label className={`${styles.inputGroup} ${styles.fullWidth}`}>
+                  <span>password</span>
+                  <input
+                    name="password"
+                    value={password1}
+                    onChange={(event) => setPassword1(event.target.value)}
+                    onBlur={() => setPasswordTouched(true)}
+                    placeholder="••••••••"
+                    disabled={submitting}
+                    type="password"
+                  />
+                  {passwordTouched && passwordError && <p style={{ color: 'red', fontSize: '0.85em', marginTop: '4px' }}>{passwordError}</p>}
+                  <p style={{ fontSize: '0.85em', color: '#666', marginTop: '4px' }}>Leave blank to keep current password</p>
+                </label>
+              </div>
+              <div className={styles.formGrid}>
+                <label className={`${styles.inputGroup} ${styles.fullWidth}`}>
+                  <span>re-enter password</span>
+                  <input
+                    name="re-password"
+                    value={password2}
+                    onChange={(event) => setPassword2(event.target.value)}
+                    onBlur={() => setConfirmTouched(true)}
+                    placeholder="••••••••"
+                    disabled={submitting}
+                    type="password"
+                  />
+                  {confirmTouched && confirmError && <p style={{ color: 'red', fontSize: '0.85em', marginTop: '4px' }}>{confirmError}</p>}
+                </label>
               </div>
             </div>
 

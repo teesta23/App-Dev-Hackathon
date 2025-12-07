@@ -47,3 +47,16 @@ export async function purchaseStreakSaves(userId: string, count: number): Promis
   })
   return parseResponse<User>(response)
 }
+
+export async function updateUser(userId: string, updates: {
+  username?: string
+  email?: string
+  password?: string
+}): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  })
+  return parseResponse<User>(response)
+}
