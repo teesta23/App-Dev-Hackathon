@@ -1,16 +1,40 @@
 import type { FormEvent } from 'react'
+import { useState } from 'react'
 import styles from './Login.module.css'
 
 type LoginProps = {
   onBack?: () => void
-  onLogin?: () => void
+  onLogin?: (user: { id: string; username: string; email: string }) => void
   onCreateAccount?: () => void
 }
 
 function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    onLogin?.()
+
+    try {
+      const response = await fetch('http://localhost:8000/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        setError(data.detail || 'Login failed')
+        return
+      }
+
+      const user = await response.json()
+      setError('')
+      onLogin?.(user)
+    } catch (err) {
+      setError('Network error. Please try again.')
+    }
   }
 
   return (
@@ -51,8 +75,29 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
 
           <label className={styles.inputGroup}>
             <span>email</span>
-            <input name="email" type="email" placeholder="you@example.com" required />
+            <input
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </label>
+
+          <label className={styles.inputGroup}>
+            <span>password</span>
+            <input
+              name="password"
+              type="password"
+              placeholder="••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </label>
+
+          {error && <p style={{ color: 'red' }}>{error}</p>}
 
           <button className={styles.primaryButton} type="submit">
             <span className={styles.arrowText}>&gt;</span> log in
