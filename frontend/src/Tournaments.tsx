@@ -116,10 +116,14 @@ function Tournaments({
   }, [])
 
   const loadTournaments = async () => {
+    if (!userId) {
+      setTournaments([])
+      return
+    }
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchTournaments()
+      const data = await fetchTournaments(userId)
       const normalized = data.map(normalizeTournament)
       setTournaments(sortByStart(normalized))
     } catch (err) {
@@ -132,7 +136,8 @@ function Tournaments({
 
   useEffect(() => {
     loadTournaments()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
 
   const ladderEntries = useMemo(() => {
     const filled: Record<string, LadderEntry[]> = {}
@@ -163,12 +168,17 @@ function Tournaments({
       return
     }
 
+    if (!userId) {
+      setCreateError('Log in to create a tournament.')
+      return
+    }
+
     setCreateSubmitting(true)
     setCreateError(null)
 
     try {
       const created = normalizeTournament(
-        await createTournament({ name, password, durationHours: DEFAULT_DURATION_HOURS }),
+        await createTournament({ name, password, creatorId: userId, durationHours: DEFAULT_DURATION_HOURS }),
       )
       setTournaments((prev) =>
         sortByStart([created, ...prev.filter((t) => tournamentKey(t) !== tournamentKey(created))]),
@@ -330,7 +340,12 @@ function Tournaments({
               </div>
 
               <div className={styles.standingList}>
-                {error ? (
+                {userId === null ? (
+                  <div className={styles.emptyState}>
+                    <div className={styles.emptyTitle}>log in to see your tournaments</div>
+                    <div className={styles.emptySub}>We only show ladders you’ve joined. Create or join after signing in.</div>
+                  </div>
+                ) : error ? (
                   <div className={styles.emptyState}>
                     <div className={styles.emptyTitle}>couldn&apos;t load tournaments</div>
                     <div className={styles.emptySub}>{error}</div>

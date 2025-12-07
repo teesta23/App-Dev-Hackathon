@@ -20,6 +20,7 @@ export type Tournament = {
   id?: string
   name: string
   password?: string
+  creatorId?: string
   startTime: string
   endTime: string
   participants: TournamentParticipant[]
@@ -30,6 +31,7 @@ export type Tournament = {
 type CreateTournamentPayload = {
   name: string
   password: string
+  creatorId: string
   durationHours?: number
 }
 
@@ -56,8 +58,12 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return data as T
 }
 
-export async function fetchTournaments(): Promise<Tournament[]> {
-  const response = await fetch(`${API_BASE_URL}/tournaments/`)
+export async function fetchTournaments(userId?: string | null): Promise<Tournament[]> {
+  const url = new URL(`${API_BASE_URL}/tournaments/`)
+  if (userId) {
+    url.searchParams.set('userId', userId)
+  }
+  const response = await fetch(url.toString())
   return parseResponse<Tournament[]>(response)
 }
 

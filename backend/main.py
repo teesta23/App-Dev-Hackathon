@@ -119,6 +119,7 @@ class TournamentModel(BaseModel):
     id: PyObjectId | None = Field(alias="_id", default=None)
     name: str = Field(...)
     password: str = Field(...)
+    creatorId: str | None = None
     startTime: str = Field(...)
     endTime: str = Field(...)
     participants: list[TournamentParticipant] = []
@@ -132,6 +133,7 @@ class TournamentModel(BaseModel):
 class CreateTournamentRequest(BaseModel):
     name: str = Field(..., min_length=1)
     password: str = Field(..., min_length=1)
+    creatorId: str = Field(...)
     durationHours: int | None = Field(default=24 * 7, ge=1)
 
 class JoinTournamentRequest(BaseModel):
@@ -199,6 +201,23 @@ def apply_profile_to_participant(participant: dict, profile: dict) -> dict:
     participant["currentHardSolved"] = profile["hardSolved"]
     participant["score"] = calculate_score(participant)
     return participant
+
+
+def build_participant_from_profile(user: dict, profile: dict) -> dict:
+    return {
+        "id": str(user["_id"]),
+        "username": user["username"],
+        "lcUsername": user.get("lcUsername"),
+        "initialTotalSolved": profile["totalSolved"],
+        "currentTotalSolved": profile["totalSolved"],
+        "initialEasySolved": profile["easySolved"],
+        "currentEasySolved": profile["easySolved"],
+        "initialMediumSolved": profile["mediumSolved"],
+        "currentMediumSolved": profile["mediumSolved"],
+        "initialHardSolved": profile["hardSolved"],
+        "currentHardSolved": profile["hardSolved"],
+        "score": 0,
+    }
 
 
 async def refresh_tournament(tournament: dict) -> dict:
@@ -441,15 +460,33 @@ async def create_tournament(tournament: CreateTournamentRequest):
             status_code=status.HTTP_400_BAD_REQUEST, detail="A tournament with that name already exists."
         )
 
+    creator = await users_collection.find_one({"_id": ObjectId(tournament.creatorId)})
+    if not creator:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Creator not found.")
+    if not creator.get("lcUsername"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Link your LeetCode account first.")
+
+    fresh_profile = fetch_leetcode_profile(creator["lcUsername"])
+    if fresh_profile is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unable to fetch LeetCode profile.")
+
+    await users_collection.update_one(
+        {"_id": ObjectId(tournament.creatorId)},
+        {"$set": {"leetcodeProfile": fresh_profile}},
+    )
+
+    creator_participant = build_participant_from_profile(creator, fresh_profile)
+
     start_time = datetime.utcnow()
     end_time = start_time + timedelta(hours=tournament.durationHours or 24)
 
     new_tournament = {
         "name": tournament.name,
         "password": tournament.password,
+        "creatorId": tournament.creatorId,
         "startTime": start_time.isoformat(),
         "endTime": end_time.isoformat(),
-        "participants": [],
+        "participants": [creator_participant],
         "streak": 0,
         "lastChecked": None,
     }
@@ -466,8 +503,11 @@ async def create_tournament(tournament: CreateTournamentRequest):
     response_model=list[TournamentModel],
     response_model_by_alias=False,
 )
-async def list_tournaments():
-    tournaments = await tournaments_collection.find().to_list(length=1000)
+async def list_tournaments(userId: str | None = None):
+    query = {}
+    if userId:
+        query = {"participants.id": userId}
+    tournaments = await tournaments_collection.find(query).to_list(length=1000)
     refreshed: list[dict] = []
     for tournament in tournaments:
         refreshed.append(await refresh_tournament(tournament))
@@ -529,25 +569,7 @@ async def join_tournament(data: JoinTournamentRequest):
         {"$set": {"leetcodeProfile": fresh_profile}},
     )
     
-    #setting fields for a new participant
-    initialTotalSolved = fresh_profile["totalSolved"]
-    initialEasySolved = fresh_profile["easySolved"]
-    initialMediumSolved = fresh_profile["mediumSolved"]
-    initialHardSolved = fresh_profile["hardSolved"]
-    participant = {
-        "id": data.id,
-        "username": user["username"],
-        "lcUsername": user.get("lcUsername"),
-        "initialTotalSolved": initialTotalSolved,
-        "currentTotalSolved": initialTotalSolved,
-        "initialEasySolved": initialEasySolved,
-        "currentEasySolved": initialEasySolved,
-        "initialMediumSolved": initialMediumSolved,
-        "currentMediumSolved": initialMediumSolved,
-        "initialHardSolved": initialHardSolved,
-        "currentHardSolved": initialHardSolved,
-        "score": 0
-    }
+    participant = build_participant_from_profile(user, fresh_profile)
 
     #adding the new participant to Mongo
     update_result = await tournaments_collection.find_one_and_update(
