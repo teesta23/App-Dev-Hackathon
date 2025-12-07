@@ -1,9 +1,20 @@
+#you will need to install the following packages (IN .venv NOT YOUR GLOBAL ENVIRONMENT):
+#pip install requests
+#pip install pymongo
+#pip install "fastapi[standard]"
+
+#to run the backend server you will need to run:
+#fastapi dev main.py
+
+#then click the localhost url it spits out to checkout the Swagger UI backend (sorta like view the React pages)
+
 import os
 from typing import List, Optional
 
 #for leetcode graphql
 import requests
 from datetime import datetime
+
 
 
 from fastapi import FastAPI, HTTPException, status
@@ -27,15 +38,15 @@ load_dotenv()
 MONGO_URL = os.getenv("MONGO_URL")
 MONGO_DB = os.getenv("MONGO_DB")
 
-# CREATE A VIRTUAL ENVIRONMENT AND INSTALL THE REQUIRED FASTAPI PACKAGES
-
 app = FastAPI()
 
+#mongodb strings imported from .env file check out google doc for the contents of what your .env is supposed to look like
 client = AsyncMongoClient(MONGO_URL)
 db = client[MONGO_DB]
 users_collection = db.get_collection("users")
 tournaments_collection = db.get_collection("tournaments")
 
+#this allows comms between frontend and backend
 origins = [
     "http://localhost:5173",
 ]
@@ -50,21 +61,25 @@ app.add_middleware(
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
+#user document for mongo
 class UserModel(BaseModel):
     id: PyObjectId | None = Field(alias="_id", default=None)
     username: str = Field(...)
     email: EmailStr = Field(...)
     password: str = Field(...)
+    points: int = Field(default=0)
     lcUsername: str | None = None
     leetcodeProfile: dict | None = None
     model_config = ConfigDict(
         populate_by_name=True,
     )
-
+#DIFFERENT MODELS USED, we will 
+#user doc update (this will probably be used to settings page)
 class UpdateUserModel(BaseModel):
     username: str | None = None
     email: EmailStr | None = None
     password: str | None = None
+    points: int | None = None
     lcUsername: str | None = None
     leetcodeProfile: dict | None = None
     model_config = ConfigDict(
@@ -110,6 +125,7 @@ class JoinTournamentRequest(BaseModel):
     tournamentName: str
     tournamentPassword: str
 
+#this is how we get user data from leetcode
 LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql"
 
 LEETCODE_QUERY = """
@@ -126,6 +142,7 @@ query getUserProfile($username: String!) {
 }
 """
 
+#this is used when updated a users leetcode profile
 def fetch_leetcode_profile(username: str):
     response = requests.post(
         LEETCODE_GRAPHQL_URL,
@@ -165,7 +182,22 @@ async def register_user(user: UserModel):
     return new_user
 
 
-#getting a student
+#getting a user
+#this is for getting user data when they are ALREADY logged in
+#(to populate the webpages with their data)
+#the id for the user would be stored in "localStorage" in the frontend
+#this would get stored upon a successful login/registration
+
+#the id is the mongo id (remember "_id" ?) as a string, checkout the mongo acc there are some entries there
+#there should probably be a app.get request via user and password, when that succeeds,
+#store the associated user id in localStorage
+
+#i hope this makes sense
+#in short a class for LoginRequest will be needed. It has two fields, username and password
+#they are both strings
+
+#then an app.get endpoint will be needed probably called login_user or something like that
+
 @app.get(
     "/users/{id}",
     response_description="Get a user",
@@ -182,6 +214,7 @@ async def get_user(id: str):
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
 #updating a user
+#can be used for updating settings
 @app.put(
     "/users/{id}",
     response_description="Update a user",
@@ -209,6 +242,8 @@ async def update_user(id: str, user: UpdateUserModel):
     
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
+#this updates a user document based on the user id (data.id) and
+#lc_username
 @app.put(
     "/leetcode/update",
     response_description="Retrieve and update user's LeetCode stats",
@@ -240,6 +275,8 @@ async def update_leetcode_stats(data: LeetCodeUpdateRequest):
         "leetcodeProfile": solved
     }
 
+#creating a new tourny. a tourny has a name, pass, start time, end time
+# and the participants
 @app.post(
     "/tournaments/",
     response_description="Create a tournament",
@@ -253,7 +290,15 @@ async def create_tournament(tournament: TournamentModel):
     new_tournament["_id"] = result.inserted_id
 
     return new_tournament
-    
+
+#adding a new participant to a tournament
+#needs a user id, tornament name, and torny pass
+# 
+# There is no real way to track "questions solved since a specific time"
+# via the LeetCode GraphQL. So, we track the number of solves for each
+# difficulty from when the user first joined the tournament
+# compared to their current number of solves we can deduce the amount
+# they solved while in the tournament   
 @app.put(
     "/tournaments/",
     response_description="Join a tournament by name & password",
@@ -262,7 +307,7 @@ async def create_tournament(tournament: TournamentModel):
 )
 async def join_tournament(data: JoinTournamentRequest):
     
-    #lookup tourny that matches user/pass combo
+    #lookup tourny that matches tourny_user/tourney pass combo
     tournament = await tournaments_collection.find_one({
         "name": data.tournamentName,
         "password": data.tournamentPassword
@@ -273,14 +318,15 @@ async def join_tournament(data: JoinTournamentRequest):
     
     tournament_id = tournament["_id"]
     
-    #user needs to have linked their lc profile
+    #user needs to exist (this is probably redundant)
     user = await users_collection.find_one({"_id": ObjectId(data.id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
-    
-    if not user.get("leetCodeProfile"):
+    #user needs to have linked their lc profile
+    if not user.get("leetcodeProfile"):
         raise HTTPException(status_code=400, detail="User has not linked their LeetCode Profile.")
     
+    #setting fields for a new participant
     initialTotalSolved = user["leetcodeProfile"]["totalSolved"]
     initialEasySolved = user["leetcodeProfile"]["easySolved"]
     initialMediumSolved = user["leetcodeProfile"]["MediumSolved"]
@@ -299,6 +345,9 @@ async def join_tournament(data: JoinTournamentRequest):
         "score": 0,
     }
 
-    updated = await tournaments_collection.find_one_and_update(
-        {"_id": ObjectId()}
+    #adding the new participant to Mongo
+    update_result = await tournaments_collection.find_one_and_update(
+        {"_id": ObjectId(tournament_id)},
+        {"$push": {"participants": participant}},
+        return_document=ReturnDocument.AFTER
     )
