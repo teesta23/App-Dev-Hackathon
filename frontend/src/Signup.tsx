@@ -16,16 +16,37 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
     const username = String(formData.get('username') ?? '').trim()
+    const email = String(formData.get('email') ?? '').trim()
     const password1 = String(formData.get('password') ?? '').trim()
     const password2 = String(formData.get('re-password') ?? '').trim()
+
     if (isEmail(username)) {
-      setError('Use a username, not an email, for this field.')
+      setError('Enter email, not username for this field.')
       return
     }
+
+    if (isUsername(email)) {
+      setError('Enter username, not email for this field.')
+      return
+    }
+
+    if (!isEmail(email))
+    {
+      setError('Use valid email format.')
+      return
+    }
+
+    if (!isUsername(username))
+    {
+      setError('Username must be 1–30 characters in length and contain only letters, numbers, or underscores.')
+      return
+    }
+
     if (!passwordsMatch(password1, password2)) {
-      setError('One of the passwords do not match.')
+      setError('Passwords do not match.')
       return
     }
+    
     setError(null)
     onCreate?.()
   }
