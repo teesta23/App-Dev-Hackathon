@@ -21,6 +21,17 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
     const password2 = String(formData.get('re-password') ?? '').trim()
 
 
+
+    if (isEmail(username)) {
+      setError('Enter email, not username for this field.')
+      return
+    }
+
+    if (isUsername(email)) {
+      setError('Enter username, not email for this field.')
+      return
+    }
+
     if (!isEmail(email))
     {
       setError('Use valid email format.')
@@ -39,7 +50,29 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
     }
 
     setError(null)
-    onCreate?.()
+    // --- SEND DATA TO BACKEND ---
+  try {
+    const response = await fetch("http://localhost:8000/users/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username,
+        email,
+        password: password1,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      setError(data.detail || "Signup failed.");
+      return;
+    }
+
+    onCreate?.(); // go to next page or screen
+  } catch {
+    setError("Could not connect to backend.");
+  }
+};
   }
   return (
     <div className={styles.page}>
@@ -79,7 +112,6 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
               name="username"
               type="text"
               placeholder="janedoe"
-              pattern="[^@\\s]+"
               title="Usernames cannot contain @"
               required
             />
@@ -108,7 +140,7 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
               placeholder="••••••••"
               required />
           </label>
-          {error ? <div className={styles.errorText}>{error}</div> : null}
+          {Error ? <div className={styles.errorText}>{error}</div> : null}
           <button className={styles.primaryButton} type="submit">
             <span className={styles.arrowText}>&gt;</span> create account
           </button>
