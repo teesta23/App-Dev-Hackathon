@@ -19,6 +19,13 @@ export type User = {
   lcUsername?: string | null
   leetcodeProfile?: Record<string, unknown> | null
   avatar?: string | null
+  roomItems?: RoomItemState[]
+}
+
+export type RoomItemState = {
+  id: string
+  owned: boolean
+  placed: boolean
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -53,6 +60,24 @@ export async function purchaseStreakSaves(userId: string, count: number): Promis
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ count }),
+  })
+  return parseResponse<User>(response)
+}
+
+export async function purchaseRoomItem(userId: string, itemId: string): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/room/purchase`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId }),
+  })
+  return parseResponse<User>(response)
+}
+
+export async function saveRoomLayout(userId: string, items: RoomItemState[]): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/room`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
   })
   return parseResponse<User>(response)
 }

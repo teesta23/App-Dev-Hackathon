@@ -5,11 +5,10 @@ import { getStoredUserId } from './session'
 
 type LinkLeetcodeProps = {
   onBack?: () => void
-  onSkip?: () => void
   onContinue?: (username: string) => void
 }
 
-function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
+function LinkLeetcode({ onBack, onContinue }: LinkLeetcodeProps) {
   const [username, setUsername] = useState('')
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -30,14 +29,6 @@ function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
       console.error("Error updating leetcode stats:", err);
     }
     onContinue?.(username)
-  }
-
-  const handleSkip = () => {
-    if (onSkip) {
-      onSkip()
-      return
-    }
-    onContinue?.('')
   }
 
   return (
@@ -123,9 +114,6 @@ function LinkLeetcode({ onBack, onSkip, onContinue }: LinkLeetcodeProps) {
               disabled={!username.trim()}
             >
               <span className={styles.arrowText}>&gt;</span> link &amp; continue
-            </button>
-            <button className={styles.linkButton} type="button" onClick={handleSkip}>
-              skip for now
             </button>
           </div>
         </form>

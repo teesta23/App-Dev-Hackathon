@@ -177,7 +177,6 @@ function App() {
     return (
       <LinkLeetcode
         onBack={() => setView('signup')}
-        onSkip={() => setView('skill')}
         onContinue={(username) => {
           setLeetcodeUsername(username)
           setView('skill')

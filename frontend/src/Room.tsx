@@ -1,7 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import homeStyles from './Home2.module.css'
 import styles from './Room.module.css'
 import showerbot from '../images/showerbot.png'
+import bathtubImg from '../images/bathtub.png'
+import candleImg from '../images/candle.png'
+import dirtyShowerImg from '../images/dirtyshower.png'
+import mirrorImg from '../images/mirror.png'
+import rubberDuckImg from '../images/rubberduck.png'
+import rugImg from '../images/rug.png'
+import sinkImg from '../images/sink.png'
+import speakerImg from '../images/speaker.png'
+import { ApiError, fetchUser, purchaseRoomItem, saveRoomLayout, type RoomItemState } from './api/users'
+import { getStoredUserId } from './session'
 
 type RoomProps = {
   onBackToDashboard?: () => void
@@ -12,52 +22,56 @@ type RoomProps = {
   onLogout?: () => void
 }
 
-type RoomItem = {
+type CatalogItem = {
   id: string
   name: string
   cost: number
   description: string
   vibe: string
-  owned: boolean
-  placed: boolean
+  image: string
+  position: CSSProperties
+  defaultOwned?: boolean
 }
 
-const starterItems: RoomItem[] = [
+type RoomItem = CatalogItem & RoomItemState
+
+const roomCatalog: CatalogItem[] = [
+  {
+    id: 'dirtyshower',
+    name: 'grimy shower stall',
+    cost: 0,
+    description: 'where we start — cracked tile and mildew galore.',
+    vibe: 'baseline',
+    image: dirtyShowerImg,
+    defaultOwned: true,
+    position: { right: '42px', bottom: '122px', width: '340px' },
+  },
+  {
+    id: 'bathtub',
+    name: 'fresh soak tub',
+    cost: 420,
+    description: 'new porcelain fix to finally ditch the grime.',
+    vibe: 'glow up',
+    image: bathtubImg,
+    position: { right: '24px', bottom: '102px', width: '360px' },
+  },
+  {
+    id: 'sink',
+    name: 'floating sink',
+    cost: 240,
+    description: 'speed-run your hand washing with a clean basin.',
+    vibe: 'fresh start',
+    image: sinkImg,
+    position: { left: '42px', bottom: '182px', width: '210px' },
+  },
   {
     id: 'rug',
     name: 'sunrise rug',
     cost: 180,
     description: 'warm base so ShowerBot never steps onto cold tile.',
     vibe: 'cozy landing',
-    owned: true,
-    placed: true,
-  },
-  {
-    id: 'plant',
-    name: 'leafy plant',
-    cost: 120,
-    description: 'keeps the space fresh and hides stray shampoo bottles.',
-    vibe: 'fresh air',
-    owned: true,
-    placed: true,
-  },
-  {
-    id: 'duck',
-    name: 'ShowerBot rubber duck',
-    cost: 80,
-    description: 'personal hype coach floating by the tub.',
-    vibe: 'ShowerBot buddy',
-    owned: true,
-    placed: true,
-  },
-  {
-    id: 'towels',
-    name: 'stacked towels',
-    cost: 140,
-    description: 'so ShowerBot can speed-run drying off.',
-    vibe: 'utility',
-    owned: true,
-    placed: true,
+    image: rugImg,
+    position: { left: '34%', bottom: '12px', width: '420px' },
   },
   {
     id: 'mirror',
@@ -65,8 +79,8 @@ const starterItems: RoomItem[] = [
     cost: 260,
     description: 'glow-up lighting for post-game selfies.',
     vibe: 'confidence',
-    owned: false,
-    placed: false,
+    image: mirrorImg,
+    position: { left: '74px', top: '74px', width: '220px' },
   },
   {
     id: 'speaker',
@@ -74,28 +88,41 @@ const starterItems: RoomItem[] = [
     cost: 220,
     description: 'pump lo-fi while decorating or grinding.',
     vibe: 'lo-fi mode',
-    owned: false,
-    placed: false,
+    image: speakerImg,
+    position: { left: '236px', top: '38px', width: '140px' },
   },
   {
-    id: 'caddy',
-    name: 'bath caddy',
-    cost: 200,
-    description: 'holds snacks and strategy notes near the tub.',
-    vibe: 'snack ready',
-    owned: false,
-    placed: false,
-  },
-  {
-    id: 'candles',
-    name: 'lavender candles',
-    cost: 160,
-    description: 'for a calm cool-down after tournaments.',
+    id: 'candle',
+    name: 'lavender candle',
+    cost: 140,
+    description: 'soft glow for chill-down time after ladders.',
     vibe: 'chill mode',
-    owned: false,
-    placed: false,
+    image: candleImg,
+    position: { right: '148px', bottom: '230px', width: '88px' },
+  },
+  {
+    id: 'rubberduck',
+    name: 'ShowerBot rubber duck',
+    cost: 90,
+    description: 'personal hype coach floating by the tub.',
+    vibe: 'ShowerBot buddy',
+    image: rubberDuckImg,
+    position: { right: '210px', bottom: '176px', width: '84px' },
   },
 ]
+
+const hydrateRoomItems = (roomItems?: RoomItemState[]): RoomItem[] => {
+  const savedById = new Map((roomItems ?? []).map((item) => [item.id, item]))
+  return roomCatalog.map((item) => {
+    const saved = savedById.get(item.id)
+    const owned = saved?.owned ?? Boolean(item.defaultOwned)
+    const placed = saved?.placed ?? owned
+    return { ...item, owned, placed }
+  })
+}
+
+const toPayload = (items: RoomItem[]): RoomItemState[] =>
+  items.map((item) => ({ id: item.id, owned: item.owned, placed: item.placed }))
 
 function Room({
   onBackToDashboard,
@@ -105,32 +132,109 @@ function Room({
   onGoToSettings,
   onLogout,
 }: RoomProps) {
-  const [points, setPoints] = useState(2876)
-  const [items, setItems] = useState<RoomItem[]>(starterItems)
+  const [points, setPoints] = useState(0)
+  const [items, setItems] = useState<RoomItem[]>(hydrateRoomItems())
+  const [userId, setUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [purchasingId, setPurchasingId] = useState<string | null>(null)
   const [showShop, setShowShop] = useState(false)
   const [showInventory, setShowInventory] = useState(false)
+
+  const loadUser = useCallback(async (id: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchUser(id)
+      setPoints(typeof data.points === 'number' ? data.points : 0)
+      setItems(hydrateRoomItems(data.roomItems))
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
+        setError('Log back in to save your bathroom progress.')
+      } else {
+        setError('Could not load your room right now.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const stored = getStoredUserId()
+    if (!stored) {
+      setError('Log in to earn points and decorate.')
+      setLoading(false)
+      return
+    }
+    setUserId(stored)
+    void loadUser(stored)
+  }, [loadUser])
 
   const ownedItems = useMemo(() => items.filter((item) => item.owned), [items])
   const shopItems = useMemo(() => items.filter((item) => !item.owned), [items])
   const placedItems = useMemo(() => ownedItems.filter((item) => item.placed), [ownedItems])
   const stashedItems = useMemo(() => ownedItems.filter((item) => !item.placed), [ownedItems])
 
-  const handlePurchase = (id: string) => {
+  const handlePurchase = async (id: string) => {
+    if (!userId) {
+      setError('Log in to buy bathroom upgrades.')
+      return
+    }
     const target = items.find((item) => item.id === id)
-    if (!target || target.owned) return
+    if (!target || target.owned || purchasingId) return
+    if (target.cost > points) {
+      setError('Not enough points yet — keep grinding!')
+      return
+    }
 
-    if (target.cost > points) return
-
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, owned: true, placed: true } : item)),
-    )
-    setPoints((prev) => prev - target.cost)
+    setPurchasingId(id)
+    try {
+      const updatedUser = await purchaseRoomItem(userId, id)
+      setPoints(typeof updatedUser.points === 'number' ? updatedUser.points : 0)
+      setItems(hydrateRoomItems(updatedUser.roomItems))
+      setShowShop(false)
+      setError(null)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(typeof err.message === 'string' ? err.message : 'Could not complete purchase.')
+      } else {
+        setError('Could not complete purchase.')
+      }
+    } finally {
+      setPurchasingId(null)
+    }
   }
 
-  const togglePlacement = (id: string) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, placed: !item.placed } : item)),
-    )
+  const togglePlacement = async (id: string) => {
+    const target = items.find((item) => item.id === id)
+    if (!target || !target.owned) return
+
+    const previous = items
+    const next = items.map((item) => (item.id === id ? { ...item, placed: !item.placed } : item))
+    setItems(next)
+
+    if (!userId) {
+      setError('Log in to save your layout changes.')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const updated = await saveRoomLayout(userId, toPayload(next))
+      setPoints(typeof updated.points === 'number' ? updated.points : points)
+      setItems(hydrateRoomItems(updated.roomItems))
+      setError(null)
+    } catch (err) {
+      setItems(previous)
+      if (err instanceof ApiError) {
+        setError(err.message || 'Could not save your layout right now.')
+      } else {
+        setError('Could not save your layout right now.')
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   const renderSidebar = () => (
@@ -217,10 +321,11 @@ function Room({
             <p className={styles.subtitle}>
               Even if you wont shower, ShowerBot still needs to! Use your points to drop furniture and decorate ShowerBot's bathroom.
             </p>
+            {error ? <div className={styles.inlineError}>{error}</div> : null}
           </div>
 
           <div className={styles.pointsBadge}>
-            <div className={styles.pointsNumber}>{points}</div>
+            <div className={styles.pointsNumber}>{loading ? '…' : points}</div>
             <div className={styles.pointsLabel}>CURRENT POINTS</div>
           </div>
         </div>
@@ -273,13 +378,6 @@ function Room({
               <div className={styles.windowCurtain} />
               <div className={styles.windowLight} />
             </div>
-            <div className={styles.tub}>
-              <div className={styles.tubWater} />
-            </div>
-            <div className={styles.sink}>
-              <div className={styles.faucet} />
-            </div>
-            <div className={styles.rugShadow} />
             <div className={styles.mascot}>
               <img className={styles.mascotImg} src={showerbot} alt="ShowerBot" />
             </div>
@@ -287,11 +385,13 @@ function Room({
             {placedItems.map((item) => (
               <button
                 key={item.id}
-                className={`${styles.roomItem} ${styles[item.id]}`}
+                className={styles.roomItem}
                 type="button"
+                style={item.position}
                 onClick={() => togglePlacement(item.id)}
                 title={item.placed ? 'Click to stash' : 'Click to place'}
               >
+                <img className={styles.itemImage} src={item.image} alt={item.name} />
                 <span className={styles.itemTag}>{item.name}</span>
               </button>
             ))}
@@ -319,9 +419,15 @@ function Room({
                   <button
                     className={styles.primaryButton}
                     type="button"
+                    disabled={purchasingId === item.id || item.cost > points || !userId}
                     onClick={() => handlePurchase(item.id)}
                   >
-                    <span className={styles.arrowText}>&gt;</span> buy
+                    <span className={styles.arrowText}>&gt;</span>{' '}
+                    {purchasingId === item.id
+                      ? 'working...'
+                      : item.cost > points
+                        ? 'need points'
+                        : 'buy'}
                   </button>
                 </div>
               </div>
@@ -370,6 +476,7 @@ function Room({
                   className={styles.inventoryRow}
                   type="button"
                   onClick={() => togglePlacement(item.id)}
+                  disabled={saving}
                 >
                   <div>
                     <div className={styles.inventoryName}>{item.name}</div>
