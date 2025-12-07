@@ -20,6 +20,15 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
     const password1 = String(formData.get('password') ?? '').trim()
     const password2 = String(formData.get('re-password') ?? '').trim()
 
+  type FieldError = {
+  loc: string[];   // location of the error, e.g. ["body", "username"]
+  msg: string;     // human-readable message
+  type: string;    // error type, e.g. "value_error"
+  };
+
+const [errors, setErrors] = useState<FieldError[]>([]);
+
+
     if (isEmail(username)) {
       setError('Enter email, not username for this field.')
       return
@@ -46,7 +55,7 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
       setError('Passwords do not match.')
       return
     }
-    
+
     setError(null)
     onCreate?.()
   }

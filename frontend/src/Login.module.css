@@ -198,10 +198,11 @@
 }
 
 .errorText {
-  color: #e35656;
-  font-weight: 700;
-  text-transform: lowercase;
+  color: #bb1c1c;
+  font-weight: 500;
+  text-transform: capitalize;
   letter-spacing: 0.2px;
+  font-style: italic;
 }
 
 .primaryButton {
