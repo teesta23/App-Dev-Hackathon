@@ -1,26 +1,29 @@
 import { useState, type FormEvent } from 'react'
 import styles from './Login.module.css'
+
+const API_BASE_URL = 'http://localhost:8000'
+
 type SignupProps = {
   onBack?: () => void
   onCreate?: () => void
   onLogin?: () => void
 }
-function Signup({ onBack, onCreate, onLogin }: SignupProps) 
-{
-  const [error, setError] = useState<string | null>(null)
-  const isEmail = (em: string) => /\S+@\S+\.\S/.test(em)
-  const isUsername = (un: string) =>  /^[A-Za-z0-9_]{1,30}$/.test(un);
-  const passwordsMatch = (password1: string, password2: string) => password1 == password2
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+function Signup({ onBack, onCreate, onLogin }: SignupProps) {
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  const isEmail = (em: string) => /\S+@\S+\.\S+/.test(em)
+  const isUsername = (un: string) => /^[A-Za-z0-9_]{1,30}$/.test(un)
+  const passwordsMatch = (password1: string, password2: string) => password1 === password2
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
     const username = String(formData.get('username') ?? '').trim()
     const email = String(formData.get('email') ?? '').trim()
     const password1 = String(formData.get('password') ?? '').trim()
     const password2 = String(formData.get('re-password') ?? '').trim()
-
-
 
     if (isEmail(username)) {
       setError('Enter email, not username for this field.')
@@ -32,14 +35,12 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
       return
     }
 
-    if (!isEmail(email))
-    {
+    if (!isEmail(email)) {
       setError('Use valid email format.')
       return
     }
 
-    if (!isUsername(username))
-    {
+    if (!isUsername(username)) {
       setError('Username must be 1–30 characters in length and contain only letters, numbers, or underscores.')
       return
     }
@@ -50,30 +51,37 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
     }
 
     setError(null)
-    // --- SEND DATA TO BACKEND ---
-  try {
-    const response = await fetch("http://localhost:8000/users/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username,
-        email,
-        password: password1,
-      }),
-    });
+    setSubmitting(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          email,
+          password: password1,
+        }),
+      })
 
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.detail || "Signup failed.");
-      return;
+      const data = await response.json()
+      if (!response.ok) {
+        setError(typeof data.detail === 'string' ? data.detail : 'Signup failed.')
+        return
+      }
+
+      const userId = data._id ?? data.id
+      if (userId) {
+        localStorage.setItem('user_id', String(userId))
+      }
+
+      onCreate?.()
+    } catch {
+      setError('Could not connect to backend.')
+    } finally {
+      setSubmitting(false)
     }
+  }
 
-    onCreate?.(); // go to next page or screen
-  } catch {
-    setError("Could not connect to backend.");
-  }
-};
-  }
   return (
     <div className={styles.page}>
       <div className={styles.glowOne} />
@@ -122,6 +130,7 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
               name="email"
               type="email"
               placeholder="you@example.com"
+              autoComplete="email"
               required />
           </label>
           <label className={styles.inputGroup}>
@@ -130,6 +139,7 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
               name="password"
               type="password"
               placeholder="••••••••"
+              autoComplete="new-password"
               required />
           </label>
           <label className={styles.inputGroup}>
@@ -138,11 +148,12 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
               name="re-password"
               type="password"
               placeholder="••••••••"
+              autoComplete="new-password"
               required />
           </label>
-          {Error ? <div className={styles.errorText}>{error}</div> : null}
-          <button className={styles.primaryButton} type="submit">
-            <span className={styles.arrowText}>&gt;</span> create account
+          {error ? <div className={styles.errorText}>{error}</div> : null}
+          <button className={styles.primaryButton} type="submit" disabled={submitting}>
+            <span className={styles.arrowText}>&gt;</span> {submitting ? 'working...' : 'create account'}
           </button>
           <div className={styles.footerRow}>
             <span>already have an account?</span>
@@ -155,4 +166,5 @@ function Signup({ onBack, onCreate, onLogin }: SignupProps)
     </div>
   )
 }
+
 export default Signup

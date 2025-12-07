@@ -1,5 +1,7 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import styles from './Login.module.css'
+
+const API_BASE_URL = 'http://localhost:8000'
 
 type LoginProps = {
   onBack?: () => void
@@ -8,9 +10,42 @@ type LoginProps = {
 }
 
 function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    onLogin?.()
+    const formData = new FormData(event.currentTarget)
+    const email = String(formData.get('email') ?? '').trim()
+    const password = String(formData.get('password') ?? '').trim()
+
+    setError(null)
+    setSubmitting(true)
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        setError(typeof data.detail === 'string' ? data.detail : 'Login failed.')
+        return
+      }
+
+      const userId = data._id ?? data.id
+      if (userId) {
+        localStorage.setItem('user_id', String(userId))
+      }
+
+      onLogin?.()
+    } catch {
+      setError('Could not connect to backend.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -51,11 +86,23 @@ function Login({ onBack, onLogin, onCreateAccount }: LoginProps) {
 
           <label className={styles.inputGroup}>
             <span>email</span>
-            <input name="email" type="email" placeholder="you@example.com" required />
+            <input name="email" type="email" placeholder="you@example.com" autoComplete="email" required />
+          </label>
+          <label className={styles.inputGroup}>
+            <span>password</span>
+            <input
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              required
+            />
           </label>
 
-          <button className={styles.primaryButton} type="submit">
-            <span className={styles.arrowText}>&gt;</span> log in
+          {error ? <div className={styles.errorText}>{error}</div> : null}
+
+          <button className={styles.primaryButton} type="submit" disabled={submitting}>
+            <span className={styles.arrowText}>&gt;</span> {submitting ? 'working...' : 'log in'}
           </button>
 
           <div className={styles.footerRow}>

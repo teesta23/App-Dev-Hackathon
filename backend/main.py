@@ -13,7 +13,7 @@ from typing import List, Optional
 
 #for leetcode graphql
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 
@@ -70,6 +70,7 @@ class UserModel(BaseModel):
     points: int = Field(default=0)
     lcUsername: str | None = None
     leetcodeProfile: dict | None = None
+    avatar: str | None = None
     model_config = ConfigDict(
         populate_by_name=True,
     )
@@ -82,9 +83,14 @@ class UpdateUserModel(BaseModel):
     points: int | None = None
     lcUsername: str | None = None
     leetcodeProfile: dict | None = None
+    avatar: str | None = None
     model_config = ConfigDict(
         json_encoders={ObjectId: str},
     )
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
 class LeetCodeUpdateRequest(BaseModel):
     id: str
@@ -98,6 +104,7 @@ class LeetCodeUpdateResponse(BaseModel):
 class TournamentParticipant(BaseModel):
     id: str
     username: str
+    lcUsername: str | None = None
     initialTotalSolved: int
     currentTotalSolved: int
     initialEasySolved: int
@@ -115,10 +122,17 @@ class TournamentModel(BaseModel):
     startTime: str = Field(...)
     endTime: str = Field(...)
     participants: list[TournamentParticipant] = []
+    streak: int = Field(default=0)
+    lastChecked: str | None = None
 
     model_config = ConfigDict(
         populate_by_name=True,
     )
+
+class CreateTournamentRequest(BaseModel):
+    name: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+    durationHours: int | None = Field(default=24 * 7, ge=1)
 
 class JoinTournamentRequest(BaseModel):
     id: str
@@ -141,6 +155,106 @@ query getUserProfile($username: String!) {
   }
 }
 """
+
+POINT_VALUES = {
+    "easy": 10,
+    "medium": 20,
+    "hard": 30,
+}
+
+#score calculation based on deltas from when the participant joined
+def calculate_score(participant: dict) -> int:
+    easy_gain = max(
+        0, participant.get("currentEasySolved", 0) - participant.get("initialEasySolved", 0)
+    )
+    medium_gain = max(
+        0, participant.get("currentMediumSolved", 0) - participant.get("initialMediumSolved", 0)
+    )
+    hard_gain = max(
+        0, participant.get("currentHardSolved", 0) - participant.get("initialHardSolved", 0)
+    )
+
+    return (
+        easy_gain * POINT_VALUES["easy"]
+        + medium_gain * POINT_VALUES["medium"]
+        + hard_gain * POINT_VALUES["hard"]
+    )
+
+
+def serialize_tournament(tournament: dict) -> dict:
+    tournament["_id"] = str(tournament["_id"])
+    if "streak" not in tournament:
+        tournament["streak"] = 0
+    if "lastChecked" not in tournament:
+        tournament["lastChecked"] = None
+    if "participants" not in tournament:
+        tournament["participants"] = []
+    return tournament
+
+
+def apply_profile_to_participant(participant: dict, profile: dict) -> dict:
+    participant["currentTotalSolved"] = profile["totalSolved"]
+    participant["currentEasySolved"] = profile["easySolved"]
+    participant["currentMediumSolved"] = profile["mediumSolved"]
+    participant["currentHardSolved"] = profile["hardSolved"]
+    participant["score"] = calculate_score(participant)
+    return participant
+
+
+async def refresh_tournament(tournament: dict) -> dict:
+    participants = tournament.get("participants", [])
+    today = datetime.utcnow().date().isoformat()
+    should_check_streak = tournament.get("lastChecked") != today
+    streak_survived = True
+    updated_participants: list[dict] = []
+
+    for participant in participants:
+        previous_total = participant.get("currentTotalSolved", participant.get("initialTotalSolved", 0))
+        user = await users_collection.find_one({"_id": ObjectId(participant["id"])})
+        latest_profile = None
+
+        if user and user.get("lcUsername"):
+            latest_profile = fetch_leetcode_profile(user["lcUsername"])
+            if latest_profile:
+                participant["lcUsername"] = user["lcUsername"]
+                await users_collection.update_one(
+                    {"_id": ObjectId(participant["id"])},
+                    {"$set": {"leetcodeProfile": latest_profile}},
+                )
+                participant = apply_profile_to_participant(participant, latest_profile)
+            elif should_check_streak:
+                streak_survived = False
+
+        if should_check_streak and latest_profile:
+            if latest_profile["totalSolved"] <= previous_total:
+                streak_survived = False
+        elif should_check_streak and not latest_profile:
+            #if we cannot fetch data, treat it as a broken streak for safety
+            streak_survived = False
+
+        #ensure score is present even if we did not fetch an update
+        participant.setdefault("score", calculate_score(participant))
+        updated_participants.append(participant)
+
+    updated_participants.sort(key=lambda p: p.get("score", 0), reverse=True)
+
+    update_fields: dict = {"participants": updated_participants}
+    if should_check_streak:
+        if updated_participants and streak_survived:
+            update_fields["streak"] = int(tournament.get("streak", 0)) + 1
+        else:
+            update_fields["streak"] = 0
+        update_fields["lastChecked"] = today
+
+    updated = await tournaments_collection.find_one_and_update(
+        {"_id": tournament["_id"]},
+        {"$set": update_fields},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if updated is None:
+        updated = {**tournament, **update_fields}
+    return serialize_tournament(updated)
 
 #this is used when updated a users leetcode profile
 def fetch_leetcode_profile(username: str):
@@ -175,9 +289,20 @@ def fetch_leetcode_profile(username: str):
     response_model_by_alias=False,
 )
 async def register_user(user: UserModel):
+    normalized_email = user.email.lower()
+    existing_user = await users_collection.find_one(
+        {"$or": [{"email": normalized_email}, {"username": user.username}]}
+    )
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A user with that email or username already exists.",
+        )
+
     new_user = user.model_dump(by_alias=True, exclude=["id"])
+    new_user["email"] = normalized_email
     result = await users_collection.insert_one(new_user)
-    new_user["_id"] = result.inserted_id
+    new_user["_id"] = str(result.inserted_id)
 
     return new_user
 
@@ -213,6 +338,25 @@ async def get_user(id: str):
     
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
+@app.post(
+    "/login",
+    response_description="Login a user",
+    response_model=UserModel,
+    response_model_by_alias=False,
+)
+async def login_user(credentials: LoginRequest):
+    email = credentials.email.lower()
+    user = await users_collection.find_one({"email": email})
+
+    if not user or user.get("password") != credentials.password:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+        )
+
+    user["_id"] = str(user["_id"])
+    return user
+
 #updating a user
 #can be used for updating settings
 @app.put(
@@ -226,6 +370,12 @@ async def update_user(id: str, user: UpdateUserModel):
     user = {
         k: v for k, v in user.model_dump(by_alias=True).items() if v is not None
     }
+    avatar_data = user.get("avatar")
+    if avatar_data and len(avatar_data) > 8_000_000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Avatar is too large. Please upload an image under 5MB.",
+        )
     if len(user) >= 1:
         update_result = await users_collection.find_one_and_update(
             {"_id": ObjectId(id)},
@@ -284,12 +434,44 @@ async def update_leetcode_stats(data: LeetCodeUpdateRequest):
     status_code=status.HTTP_201_CREATED,
     response_model_by_alias=False,
 )
-async def create_tournament(tournament: TournamentModel):
-    new_tournament = tournament.model_dump(by_alias=True, exclude=["id"])
+async def create_tournament(tournament: CreateTournamentRequest):
+    existing = await tournaments_collection.find_one({"name": tournament.name})
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="A tournament with that name already exists."
+        )
+
+    start_time = datetime.utcnow()
+    end_time = start_time + timedelta(hours=tournament.durationHours or 24)
+
+    new_tournament = {
+        "name": tournament.name,
+        "password": tournament.password,
+        "startTime": start_time.isoformat(),
+        "endTime": end_time.isoformat(),
+        "participants": [],
+        "streak": 0,
+        "lastChecked": None,
+    }
+
     result = await tournaments_collection.insert_one(new_tournament)
     new_tournament["_id"] = result.inserted_id
 
-    return new_tournament
+    return serialize_tournament(new_tournament)
+
+
+@app.get(
+    "/tournaments/",
+    response_description="List tournaments with standings",
+    response_model=list[TournamentModel],
+    response_model_by_alias=False,
+)
+async def list_tournaments():
+    tournaments = await tournaments_collection.find().to_list(length=1000)
+    refreshed: list[dict] = []
+    for tournament in tournaments:
+        refreshed.append(await refresh_tournament(tournament))
+    return refreshed
 
 #adding a new participant to a tournament
 #needs a user id, tornament name, and torny pass
@@ -316,6 +498,16 @@ async def join_tournament(data: JoinTournamentRequest):
     if not tournament:
         raise HTTPException(status_code=404, detail=f"Invalid tournament name/password.")
     
+    try:
+        start_time = datetime.fromisoformat(tournament["startTime"])
+        if datetime.utcnow() - start_time > timedelta(days=1):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tournaments can only be joined in the first 24 hours after they start.",
+            )
+    except (KeyError, ValueError):
+        pass
+
     tournament_id = tournament["_id"]
     
     #user needs to exist (this is probably redundant)
@@ -323,17 +515,29 @@ async def join_tournament(data: JoinTournamentRequest):
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     #user needs to have linked their lc profile
-    if not user.get("leetcodeProfile"):
+    if not user.get("lcUsername"):
         raise HTTPException(status_code=400, detail="User has not linked their LeetCode Profile.")
     
+    if any(p.get("id") == data.id for p in tournament.get("participants", [])):
+        raise HTTPException(status_code=400, detail="User already joined this tournament.")
+
+    fresh_profile = fetch_leetcode_profile(user["lcUsername"])
+    if fresh_profile is None:
+        raise HTTPException(status_code=404, detail=f"LeetCode user {user['lcUsername']} not found")
+    await users_collection.update_one(
+        {"_id": ObjectId(data.id)},
+        {"$set": {"leetcodeProfile": fresh_profile}},
+    )
+    
     #setting fields for a new participant
-    initialTotalSolved = user["leetcodeProfile"]["totalSolved"]
-    initialEasySolved = user["leetcodeProfile"]["easySolved"]
-    initialMediumSolved = user["leetcodeProfile"]["mediumSolved"]
-    initialHardSolved = user["leetcodeProfile"]["hardSolved"]
+    initialTotalSolved = fresh_profile["totalSolved"]
+    initialEasySolved = fresh_profile["easySolved"]
+    initialMediumSolved = fresh_profile["mediumSolved"]
+    initialHardSolved = fresh_profile["hardSolved"]
     participant = {
         "id": data.id,
         "username": user["username"],
+        "lcUsername": user.get("lcUsername"),
         "initialTotalSolved": initialTotalSolved,
         "currentTotalSolved": initialTotalSolved,
         "initialEasySolved": initialEasySolved,
@@ -352,4 +556,7 @@ async def join_tournament(data: JoinTournamentRequest):
         return_document=ReturnDocument.AFTER
     )
 
-    return update_result
+    if update_result is None:
+        raise HTTPException(status_code=500, detail="Unable to join tournament right now.")
+
+    return await refresh_tournament(update_result)
