@@ -501,14 +501,19 @@ function Room({
                 }}
                 onPointerDown={handlePointerDown(item)}
                 onPointerUp={handlePointerUp}
-                onClick={() => {
-                  if (draggingId || dragMoved) return
-                  void togglePlacement(item.id)
-                }}
                 title={item.placed ? 'Click to stash' : 'Click to place'}
               >
                 <img className={styles.itemImage} src={item.image} alt={item.name} />
-                <span className={styles.itemTag}>{item.name}</span>
+                <span
+                  className={styles.itemTag}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    if (draggingId || dragMoved) return
+                    void togglePlacement(item.id)
+                  }}
+                >
+                  {item.name}
+                </span>
               </button>
             ))}
           </div>
