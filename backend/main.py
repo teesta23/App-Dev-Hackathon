@@ -107,8 +107,8 @@ class TournamentModel(BaseModel):
 
 class JoinTournamentRequest(BaseModel):
     id: str
-    tournamentName: str
-    tournamentPassword: str
+    name: str
+    password: str
 
 LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql"
 
@@ -264,8 +264,8 @@ async def join_tournament(data: JoinTournamentRequest):
     
     #lookup tourny that matches user/pass combo
     tournament = await tournaments_collection.find_one({
-        "name": data.tournamentName,
-        "password": data.tournamentPassword
+        "name": data.name,
+        "password": data.password
     })
 
     if not tournament:
@@ -278,12 +278,12 @@ async def join_tournament(data: JoinTournamentRequest):
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     
-    if not user.get("leetCodeProfile"):
+    if not user.get("leetcodeProfile"):
         raise HTTPException(status_code=400, detail="User has not linked their LeetCode Profile.")
     
     initialTotalSolved = user["leetcodeProfile"]["totalSolved"]
     initialEasySolved = user["leetcodeProfile"]["easySolved"]
-    initialMediumSolved = user["leetcodeProfile"]["MediumSolved"]
+    initialMediumSolved = user["leetcodeProfile"]["mediumSolved"]
     initialHardSolved = user["leetcodeProfile"]["hardSolved"]
     participant = {
         "id": data.id,
@@ -296,9 +296,13 @@ async def join_tournament(data: JoinTournamentRequest):
         "currentMediumSolved": initialMediumSolved,
         "initialHardSolved": initialHardSolved,
         "currentHardSolved": initialHardSolved,
-        "score": 0,
+        "score": 0
     }
 
-    updated = await tournaments_collection.find_one_and_update(
-        {"_id": ObjectId()}
+    update_result = await tournaments_collection.find_one_and_update(
+        {"_id": ObjectId(tournament_id)},
+        {"$push": {"participants": participant}},
+        return_document=ReturnDocument.AFTER
     )
+
+    return update_result
