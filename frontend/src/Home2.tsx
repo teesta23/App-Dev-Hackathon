@@ -17,6 +17,8 @@ type LadderEntry = {
 const solvedSinceJoin = (participant: TournamentParticipant) =>
   Math.max(0, (participant.currentTotalSolved ?? 0) - (participant.initialTotalSolved ?? 0))
 
+const LESSON_POINT_VALUE = 20
+
 const buildEntries = (tournament: Tournament, userId: string): { rank: number; entries: LadderEntry[] } | null => {
   const sorted = [...(tournament.participants ?? [])].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
   const entries = sorted.map((participant, index) => ({
@@ -221,6 +223,7 @@ function Home2({
   const trackLessons = (lessonTrack?.lessons ?? tracks[activeLevel]).map((lesson) => ({
     type: 'lesson',
     ...lesson,
+    points: LESSON_POINT_VALUE,
   }))
   const firstPendingIndex = trackLessons.findIndex((node) => node.status !== 'done')
   const currentIndex = trackLessons.findIndex((node) => node.status === 'current')

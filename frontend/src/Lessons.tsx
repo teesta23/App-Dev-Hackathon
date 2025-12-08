@@ -18,6 +18,8 @@ export type LessonNode = {
   reward?: string
 }
 
+const LESSON_POINT_VALUE = 20
+
 const baseTracks: Record<SkillLevelOption, LessonNode[]> = {
   beginner: [
     {
@@ -288,7 +290,12 @@ function Lessons({
 
   const activeLevel: SkillLevelOption = (lessonTrack?.skillLevel ?? skillLevel ?? 'intermediate') as SkillLevelOption
   const lessons = useMemo(
-    () => (lessonTrack?.lessons ?? tracks[activeLevel]).map((lesson) => ({ type: 'lesson', ...lesson })),
+    () =>
+      (lessonTrack?.lessons ?? tracks[activeLevel]).map((lesson) => ({
+        type: 'lesson',
+        ...lesson,
+        points: LESSON_POINT_VALUE,
+      })),
     [lessonTrack, activeLevel],
   )
   const meta = trackMeta[activeLevel]

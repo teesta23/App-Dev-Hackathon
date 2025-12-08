@@ -206,6 +206,8 @@ STREAK_SAVE_PRICING = {
     3: 480,
 }
 
+LESSON_POINT_VALUE = 20
+
 ROOM_CATALOG: dict[str, dict] = {
     "dirtyshower": {"cost": 0, "default_owned": True, "x": 12.0, "y": 56.0},
     "bathtub": {"cost": 420, "default_owned": False, "x": 72.0, "y": 62.0},
@@ -456,7 +458,14 @@ def build_lesson_progress(
         elif not found_current:
             status = "current"
             found_current = True
-        lessons.append({**lesson, "status": status, "type": lesson.get("type", "lesson")})
+        lessons.append(
+            {
+                **lesson,
+                "status": status,
+                "type": lesson.get("type", "lesson"),
+                "points": LESSON_POINT_VALUE,
+            }
+        )
 
     if not found_current:
         # all lessons completed, mark the last one as current to avoid empty states
@@ -926,7 +935,7 @@ async def complete_lesson(id: str, lesson_id: str):
     points_awarded = 0
     if lesson_id not in completed:
         completed.add(lesson_id)
-        points_awarded = int(lesson_meta.get("points", 0))
+        points_awarded = LESSON_POINT_VALUE
         new_points = int(user.get("points", 0)) + points_awarded
         await users_collection.update_one(
             {"_id": ObjectId(id)},
