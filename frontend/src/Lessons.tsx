@@ -1,6 +1,9 @@
+import { useEffect, useMemo, useState } from 'react'
 import homeStyles from './Home2.module.css'
 import styles from './Lessons.module.css'
 import type { SkillLevelOption } from './SkillLevel'
+import { completeLesson, fetchLessons, type LessonTrack } from './api/users'
+import { getStoredUserId } from './session'
 
 export type LessonNode = {
   id: string
@@ -11,7 +14,251 @@ export type LessonNode = {
   points: number
   focus: string
   icon: string
+  url?: string
   reward?: string
+}
+
+const baseTracks: Record<SkillLevelOption, LessonNode[]> = {
+  beginner: [
+    {
+      id: 'hello-world',
+      title: 'hello world + printing',
+      type: 'lesson',
+      status: 'current',
+      duration: '8 min read',
+      points: 60,
+      focus: 'output + syntax',
+      icon: '{}',
+      url: 'https://www.freecodecamp.org/news/python-hello-world/',
+    },
+    {
+      id: 'variables',
+      title: 'variables + types',
+      type: 'lesson',
+      status: 'locked',
+      duration: '10 min read',
+      points: 70,
+      focus: 'data basics',
+      icon: 'Aa',
+      url: 'https://www.w3schools.com/python/python_variables.asp',
+    },
+    {
+      id: 'conditions',
+      title: 'conditionals in python',
+      type: 'lesson',
+      status: 'locked',
+      duration: '12 min read',
+      points: 80,
+      focus: 'logic',
+      icon: '??',
+      url: 'https://www.programiz.com/python-programming/if-elif-else',
+    },
+    {
+      id: 'loops',
+      title: 'loops that make sense',
+      type: 'lesson',
+      status: 'locked',
+      duration: '12 min read',
+      points: 90,
+      focus: 'loops',
+      icon: 'LO',
+      url: 'https://realpython.com/python-for-loop/',
+    },
+    {
+      id: 'functions',
+      title: 'functions 101',
+      type: 'lesson',
+      status: 'locked',
+      duration: '14 min read',
+      points: 100,
+      focus: 'functions',
+      icon: 'fx',
+      url: 'https://www.freecodecamp.org/news/functions-in-python-a-beginners-guide/',
+    },
+    {
+      id: 'lists',
+      title: 'lists + arrays',
+      type: 'lesson',
+      status: 'locked',
+      duration: '14 min read',
+      points: 110,
+      focus: 'collections',
+      icon: '[]',
+      url: 'https://realpython.com/python-lists-tuples/',
+      reward: 'unlock quiz',
+    },
+  ],
+  intermediate: [
+    {
+      id: 'arrays',
+      title: 'array and string review',
+      type: 'lesson',
+      status: 'current',
+      duration: '12 min read',
+      points: 80,
+      focus: 'arrays',
+      icon: 'AR',
+      url: 'https://www.geeksforgeeks.org/array-data-structure/',
+    },
+    {
+      id: 'two-pointers',
+      title: 'two-pointer patterns',
+      type: 'lesson',
+      status: 'locked',
+      duration: '14 min read',
+      points: 90,
+      focus: 'patterns',
+      icon: '<>',
+      url: 'https://www.geeksforgeeks.org/two-pointers-technique/',
+    },
+    {
+      id: 'recursion',
+      title: 'recursion drills',
+      type: 'lesson',
+      status: 'locked',
+      duration: '16 min read',
+      points: 100,
+      focus: 'recursion',
+      icon: 'RE',
+      url: 'https://www.geeksforgeeks.org/recursion/',
+    },
+    {
+      id: 'dfs',
+      title: 'depth-first search',
+      type: 'lesson',
+      status: 'locked',
+      duration: '15 min read',
+      points: 110,
+      focus: 'tree/graph traversal',
+      icon: 'TR',
+      url: 'https://www.programiz.com/dsa/graph-dfs',
+      reward: 'streak save',
+    },
+    {
+      id: 'bfs',
+      title: 'breadth-first search',
+      type: 'lesson',
+      status: 'locked',
+      duration: '14 min read',
+      points: 120,
+      focus: 'graph traversal',
+      icon: 'BF',
+      url: 'https://www.programiz.com/dsa/graph-bfs',
+    },
+    {
+      id: 'dp',
+      title: 'dynamic programming starter',
+      type: 'lesson',
+      status: 'locked',
+      duration: '18 min read',
+      points: 140,
+      focus: 'dp',
+      icon: 'DP',
+      url: 'https://www.geeksforgeeks.org/dynamic-programming/',
+      reward: 'bonus points',
+    },
+  ],
+  advanced: [
+    {
+      id: 'goroutines',
+      title: 'go routines primer',
+      type: 'lesson',
+      status: 'current',
+      duration: '12 min read',
+      points: 100,
+      focus: 'concurrency',
+      icon: 'GO',
+      url: 'https://gobyexample.com/goroutines',
+    },
+    {
+      id: 'channels',
+      title: 'channels + pipelines',
+      type: 'lesson',
+      status: 'locked',
+      duration: '12 min read',
+      points: 110,
+      focus: 'communication',
+      icon: 'CH',
+      url: 'https://gobyexample.com/channels',
+    },
+    {
+      id: 'ownership',
+      title: 'rust ownership',
+      type: 'lesson',
+      status: 'locked',
+      duration: '16 min read',
+      points: 120,
+      focus: 'memory',
+      icon: 'RS',
+      url: 'https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html',
+    },
+    {
+      id: 'lifetimes',
+      title: 'lifetimes by example',
+      type: 'lesson',
+      status: 'locked',
+      duration: '14 min read',
+      points: 120,
+      focus: 'borrowing',
+      icon: 'LT',
+      url: 'https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html',
+    },
+    {
+      id: 'ts-generics',
+      title: 'typescript generics',
+      type: 'lesson',
+      status: 'locked',
+      duration: '12 min read',
+      points: 110,
+      focus: 'type systems',
+      icon: '<T>',
+      url: 'https://www.typescriptlang.org/docs/handbook/2/generics.html',
+      reward: 'badge',
+    },
+    {
+      id: 'perf',
+      title: 'concurrency patterns',
+      type: 'lesson',
+      status: 'locked',
+      duration: '16 min read',
+      points: 140,
+      focus: 'performance',
+      icon: 'PF',
+      url: 'https://doc.rust-lang.org/book/ch16-00-concurrency.html',
+      reward: 'streak save',
+    },
+  ],
+}
+
+export const tracks = baseTracks
+
+const trackMeta: Record<
+  SkillLevelOption,
+  {
+    label: string
+    blurb: string
+    focus: string
+    target: string
+  }
+> = {
+  beginner: {
+    label: 'beginner path',
+    blurb: 'Easy ramps to get you writing real code — syntax, loops, and confidence boosters.',
+    focus: 'print, variables, loops',
+    target: 'finish your first two articles',
+  },
+  intermediate: {
+    label: 'intermediate path',
+    blurb: 'Structured data structures and algorithms drills — arrays to recursion to trees.',
+    focus: 'arrays, recursion, basic trees',
+    target: 'clear the current checkpoint',
+  },
+  advanced: {
+    label: 'advanced path',
+    blurb: 'Language hopping and paradigm flips — concurrency, ownership, and performance tuning.',
+    focus: 'go, rust, typescript ramps',
+    target: 'ship the language swap lab',
+  },
 }
 
 type LessonsProps = {
@@ -24,66 +271,6 @@ type LessonsProps = {
   onLogout?: () => void
 }
 
-export const tracks: Record<
-  SkillLevelOption,
-  {
-    label: string
-    blurb: string
-    focus: string
-    target: string
-    nodes: LessonNode[]
-  }
-> = {
-  beginner: {
-    label: 'beginner path',
-    blurb: 'Easy ramps that get you shipping quick — syntax, loops, and confidence boosters.',
-    focus: 'print, variables, loops',
-    target: 'finish 2 core lessons today',
-    nodes: [
-      { id: 'welcome', title: 'hello world', type: 'lesson', status: 'done', duration: '8 min', points: 40, focus: 'printing', icon: '{}' },
-      { id: 'vars', title: 'variables + types', type: 'lesson', status: 'done', duration: '12 min', points: 60, focus: 'types', icon: 'Aa' },
-      { id: 'loops', title: 'loops you can trust', type: 'lesson', status: 'current', duration: '14 min', points: 70, focus: 'loops', icon: 'LO' },
-      { id: 'lists', title: 'lists + arrays', type: 'lesson', status: 'locked', duration: '15 min', points: 80, focus: 'arrays', icon: '[]', reward: 'unlock quiz' },
-      { id: 'func', title: 'functions toolkit', type: 'lesson', status: 'locked', duration: '16 min', points: 90, focus: 'functions', icon: 'fx' },
-      { id: 'checkpoint-1', title: 'checkpoint: basics', type: 'checkpoint', status: 'locked', duration: '10 min', points: 120, focus: 'review', icon: '**', reward: 'badge' },
-      { id: 'logic', title: 'conditionals applied', type: 'lesson', status: 'locked', duration: '14 min', points: 90, focus: 'logic', icon: '?' },
-      { id: 'project-1', title: 'mini project: todo app', type: 'project', status: 'locked', duration: '22 min', points: 160, focus: 'practice', icon: 'PJ' },
-    ],
-  },
-  intermediate: {
-    label: 'intermediate path',
-    blurb: 'Structured data structures and algorithms drills with visuals — arrays to recursion to trees.',
-    focus: 'arrays, recursion, basic trees',
-    target: 'clear the current checkpoint',
-    nodes: [
-      { id: 'review', title: 'array patterns review', type: 'lesson', status: 'done', duration: '10 min', points: 60, focus: 'arrays', icon: 'AR' },
-      { id: 'two-pointers', title: 'two-pointer drills', type: 'lesson', status: 'done', duration: '15 min', points: 80, focus: 'patterns', icon: '<>' },
-      { id: 'recursion', title: 'recursion warmups', type: 'lesson', status: 'current', duration: '18 min', points: 90, focus: 'recursion', icon: 'RE' },
-      { id: 'dfs', title: 'depth-first search on trees', type: 'lesson', status: 'locked', duration: '20 min', points: 110, focus: 'tree traversal', icon: 'TR', reward: 'streak save' },
-      { id: 'bfs', title: 'breadth-first search on graphs', type: 'lesson', status: 'locked', duration: '18 min', points: 110, focus: 'graph traversal', icon: 'BF' },
-      { id: 'checkpoint-2', title: 'checkpoint: traversal lab', type: 'checkpoint', status: 'locked', duration: '14 min', points: 140, focus: 'mixed', icon: '**', reward: 'bonus points' },
-      { id: 'dp', title: 'dynamic programming starter pack', type: 'lesson', status: 'locked', duration: '22 min', points: 140, focus: 'dynamic programming', icon: 'DP' },
-      { id: 'project-2', title: 'project: leaderboard api', type: 'project', status: 'locked', duration: '26 min', points: 170, focus: 'service api', icon: 'API', reward: 'streak save' },
-    ],
-  },
-  advanced: {
-    label: 'advanced path',
-    blurb: 'Language hopping and paradigm flips — concurrency, ownership, and performance tuning.',
-    focus: 'go, rust, typescript ramps',
-    target: 'ship the language swap lab',
-    nodes: [
-      { id: 'golang', title: 'go routines primer', type: 'lesson', status: 'done', duration: '14 min', points: 90, focus: 'concurrency', icon: 'GO' },
-      { id: 'channels', title: 'channels + pipelines', type: 'lesson', status: 'done', duration: '16 min', points: 100, focus: 'pipelines', icon: 'CH' },
-      { id: 'ownership', title: 'rust ownership tour', type: 'lesson', status: 'current', duration: '20 min', points: 120, focus: 'ownership', icon: 'RS' },
-      { id: 'lifetimes', title: 'lifetimes by example', type: 'lesson', status: 'locked', duration: '18 min', points: 120, focus: 'lifetimes', icon: 'LT' },
-      { id: 'ts', title: 'typescript generics explained', type: 'lesson', status: 'locked', duration: '17 min', points: 110, focus: 'type systems', icon: '<T>' },
-      { id: 'checkpoint-3', title: 'checkpoint: language swap', type: 'checkpoint', status: 'locked', duration: '16 min', points: 150, focus: 'mixed', icon: '**', reward: 'speed run' },
-      { id: 'perf', title: 'performance sweeps', type: 'lesson', status: 'locked', duration: '20 min', points: 140, focus: 'perf', icon: 'PF' },
-      { id: 'project-3', title: 'project: command-line app ship', type: 'project', status: 'locked', duration: '28 min', points: 180, focus: 'command line', icon: 'APP', reward: 'streak save' },
-    ],
-  },
-}
-
 function Lessons({
   skillLevel,
   onBackToDashboard,
@@ -93,12 +280,76 @@ function Lessons({
   onGoToRoom,
   onLogout,
 }: LessonsProps) {
-  const activeLevel = skillLevel ?? 'intermediate'
-  const track = tracks[activeLevel]
-  const completed = track.nodes.filter((node) => node.status === 'done').length
-  const progress = Math.round((completed / track.nodes.length) * 100)
-  const queue = track.nodes.filter((node) => node.status !== 'done').slice(0, 3)
+  const userId = getStoredUserId()
+  const [lessonTrack, setLessonTrack] = useState<LessonTrack | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pendingLessonId, setPendingLessonId] = useState<string | null>(null)
+
+  const activeLevel: SkillLevelOption = (lessonTrack?.skillLevel ?? skillLevel ?? 'intermediate') as SkillLevelOption
+  const lessons = useMemo(
+    () => (lessonTrack?.lessons ?? tracks[activeLevel]).map((lesson) => ({ type: 'lesson', ...lesson })),
+    [lessonTrack, activeLevel],
+  )
+  const meta = trackMeta[activeLevel]
+  const completed = lessons.filter((node) => node.status === 'done').length
+  const progress = lessons.length ? Math.round((completed / lessons.length) * 100) : 0
+  const queue = lessons.filter((node) => node.status !== 'done').slice(0, 3)
   const nextLabel = queue[0]?.title ?? 'next lesson ready'
+  const currentPoints = lessonTrack?.points ?? null
+  const lastAwarded = lessonTrack?.pointsAwarded ?? 0
+
+  useEffect(() => {
+    if (!userId) {
+      setLessonTrack(null)
+      setLoading(false)
+      setError(null)
+      setPendingLessonId(null)
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      try {
+        const data = await fetchLessons(userId)
+        if (cancelled) return
+        setLessonTrack(data)
+        setError(null)
+      } catch (err) {
+        if (cancelled) return
+        console.error('Could not load lessons', err)
+        setError('Could not load your personalized lessons. Showing defaults.')
+        setLessonTrack(null)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
+  useEffect(() => {
+    if (!pendingLessonId || !userId) return
+    const handleFocus = async () => {
+      try {
+        const data = await completeLesson(userId, pendingLessonId)
+        setLessonTrack(data)
+        setError(null)
+      } catch (err) {
+        console.error('Could not complete lesson', err)
+        setError('Could not record your reward. Click a lesson again to retry.')
+      } finally {
+        setPendingLessonId(null)
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [pendingLessonId, userId])
 
   const levelBadgeCopy: Record<SkillLevelOption, string> = {
     beginner: 'gentle onboarding',
@@ -106,10 +357,24 @@ function Lessons({
     advanced: 'language explorer',
   }
 
-  const spine = track.nodes.map((node, index) => {
-    const side = index % 2 === 0 ? 'left' : 'right'
-    return { ...node, side }
-  })
+  const spine = useMemo(
+    () =>
+      lessons.map((node, index) => {
+        const side = index % 2 === 0 ? 'left' : 'right'
+        return { ...node, side }
+      }),
+    [lessons],
+  )
+
+  const handleOpenLesson = (lesson: LessonNode) => {
+    if (lesson.status === 'locked') return
+    if (lesson.url) {
+      window.open(lesson.url, '_blank', 'noreferrer')
+    }
+    if (userId) {
+      setPendingLessonId(lesson.id)
+    }
+  }
 
   const renderNav = () => (
     <aside className={homeStyles.nav}>
@@ -181,21 +446,39 @@ function Lessons({
     </aside>
   )
 
-  const renderNode = (node: LessonNode, side: 'left' | 'right') => (
-    <div className={`${styles.nodeWrap} ${side === 'left' ? styles.left : styles.right}`} key={node.id}>
-      <div className={`${styles.node} ${styles[node.type]} ${styles[node.status]}`}>
-        <div className={styles.nodeIcon}>{node.icon}</div>
-        <div className={styles.nodeTitle}>{node.title}</div>
-        <div className={styles.nodeMeta}>
-          <span>{node.focus}</span>
-          <span>
-            {node.duration} · {node.points} points
-          </span>
+  const renderNode = (node: LessonNode, side: 'left' | 'right') => {
+    const isLocked = node.status === 'locked'
+    return (
+      <div className={`${styles.nodeWrap} ${side === 'left' ? styles.left : styles.right}`} key={node.id}>
+        <div
+          className={`${styles.node} ${styles[node.type]} ${styles[node.status]} ${!isLocked ? styles.clickable : ''}`}
+          onClick={!isLocked ? () => handleOpenLesson(node) : undefined}
+          role={!isLocked ? 'button' : undefined}
+          tabIndex={!isLocked ? 0 : undefined}
+          onKeyDown={
+            !isLocked
+              ? (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    handleOpenLesson(node)
+                  }
+                }
+              : undefined
+          }
+        >
+          <div className={styles.nodeIcon}>{node.icon}</div>
+          <div className={styles.nodeTitle}>{node.title}</div>
+          <div className={styles.nodeMeta}>
+            <span>{node.focus}</span>
+            <span>
+              {node.duration} · {node.points} points
+            </span>
+          </div>
+          {node.reward ? <div className={styles.nodeReward}>{node.reward}</div> : null}
         </div>
-        {node.reward ? <div className={styles.nodeReward}>{node.reward}</div> : null}
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className={styles.page}>
@@ -207,12 +490,13 @@ function Lessons({
             <h1 className={styles.title}>
               lessons tuned for <span className={styles.accent}>[{activeLevel}]</span> devs
             </h1>
-            <p className={styles.subtitle}>{track.blurb}</p>
+            <p className={styles.subtitle}>{meta.blurb}</p>
             <div className={styles.heroBadges}>
-              <div className={styles.heroBadge}>focus: {track.focus}</div>
-              <div className={styles.heroBadge}>today: {track.target}</div>
+              <div className={styles.heroBadge}>focus: {meta.focus}</div>
+              <div className={styles.heroBadge}>today: {meta.target}</div>
               <div className={styles.heroBadge}>lane: {levelBadgeCopy[activeLevel]}</div>
             </div>
+            {error ? <div className={styles.errorText}>{error}</div> : null}
           </div>
 
           <div className={styles.heroRight}>
@@ -225,9 +509,15 @@ function Lessons({
                 <div className={styles.progressFill} style={{ width: `${progress}%` }} />
               </div>
               <div className={styles.progressFoot}>
-                <span>{completed} / {track.nodes.length} complete</span>
+                <span>{completed} / {lessons.length} complete</span>
                 <span>next: {nextLabel}</span>
               </div>
+              {lastAwarded > 0 ? (
+                <div className={styles.rewardNote}>+{lastAwarded} pts for your last read</div>
+              ) : null}
+              {currentPoints !== null ? (
+                <div className={styles.rewardNoteMuted}>{currentPoints} total points</div>
+              ) : null}
             </div>
 
             <div className={styles.badgeCard}>
@@ -269,7 +559,9 @@ function Lessons({
                 <div className={styles.sideSub}>auto-personalized from your skill pick</div>
               </div>
               <div className={styles.queue}>
-                {queue.length === 0 ? (
+                {loading ? (
+                  <div className={styles.queueEmpty}>Loading your recommended lessons…</div>
+                ) : queue.length === 0 ? (
                   <div className={styles.queueEmpty}>All caught up — pick any bubble to keep going.</div>
                 ) : (
                   queue.map((item) => {
@@ -285,20 +577,21 @@ function Lessons({
                             {item.focus} · {item.duration} · {item.points} points
                           </div>
                         </div>
-                        <div className={styles.queueRight}>
-                          <div className={styles.queueStatus}>{item.status}</div>
-                          <button
-                            className={`${styles.queueButton} ${isLocked ? styles.queueButtonDisabled : ''}`}
-                            type="button"
-                            disabled={isLocked}
-                          >
-                            {ctaLabel}
-                          </button>
+                          <div className={styles.queueRight}>
+                            <div className={styles.queueStatus}>{item.status}</div>
+                            <button
+                              className={`${styles.queueButton} ${isLocked ? styles.queueButtonDisabled : ''}`}
+                              type="button"
+                              disabled={isLocked || loading}
+                              onClick={() => handleOpenLesson(item)}
+                            >
+                              {ctaLabel}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })
-                )}
+                      )
+                    })
+                  )}
               </div>
             </div>
 

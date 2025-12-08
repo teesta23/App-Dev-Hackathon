@@ -9,6 +9,9 @@ export class ApiError extends Error {
   }
 }
 
+export type SkillLevel = 'beginner' | 'intermediate' | 'advanced'
+export type LessonStatus = 'done' | 'current' | 'locked'
+
 export type User = {
   _id?: string
   id?: string
@@ -20,6 +23,8 @@ export type User = {
   leetcodeProfile?: Record<string, unknown> | null
   avatar?: string | null
   roomItems?: RoomItemState[]
+  skillLevel?: SkillLevel | null
+  completedLessons?: string[]
 }
 
 export type RoomItemState = {
@@ -28,6 +33,25 @@ export type RoomItemState = {
   placed: boolean
   x?: number
   y?: number
+}
+
+export type Lesson = {
+  id: string
+  title: string
+  duration: string
+  points: number
+  focus: string
+  icon: string
+  url?: string
+  status: LessonStatus
+  type?: 'lesson' | 'checkpoint' | 'project'
+}
+
+export type LessonTrack = {
+  skillLevel: SkillLevel
+  lessons: Lesson[]
+  points: number
+  pointsAwarded: number
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -95,4 +119,26 @@ export async function saveRoomLayout(userId: string, items: RoomItemState[]): Pr
     body: JSON.stringify({ items }),
   })
   return parseResponse<User>(response)
+}
+
+export async function setSkillLevel(userId: string, skillLevel: SkillLevel): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/skill-level`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skillLevel }),
+  })
+  return parseResponse<User>(response)
+}
+
+export async function fetchLessons(userId: string): Promise<LessonTrack> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/lessons`)
+  return parseResponse<LessonTrack>(response)
+}
+
+export async function completeLesson(userId: string, lessonId: string): Promise<LessonTrack> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}/lessons/${lessonId}/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  return parseResponse<LessonTrack>(response)
 }

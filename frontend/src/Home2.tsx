@@ -3,7 +3,7 @@ import styles from './Home2.module.css'
 import { tracks, type LessonNode } from './Lessons.tsx'
 import type { SkillLevelOption } from './SkillLevel.tsx'
 import { fetchTournaments, type Tournament, type TournamentParticipant } from './api/tournaments'
-import { ApiError, fetchUser, refreshUserPoints } from './api/users'
+import { ApiError, fetchLessons, fetchUser, refreshUserPoints, type LessonTrack } from './api/users'
 import { clearStoredUserId, getStoredUserId } from './session'
 
 type LadderEntry = {
@@ -92,12 +92,15 @@ function Home2({
     entries: Array<{ rank: number; name: string; solvedSinceJoin: number; points: number; isYou: boolean }>
   } | null>(null)
   const [tourneyLoading, setTourneyLoading] = useState(false)
+  const [lessonTrack, setLessonTrack] = useState<LessonTrack | null>(null)
+  const [lessonsLoading, setLessonsLoading] = useState(false)
   const resetUser = () => {
     setUserId(null)
     setProfileName('Player')
     setPoints(0)
     setStreakSaves(0)
     setBestTournament(null)
+    setLessonTrack(null)
   }
 
   useEffect(() => {
@@ -175,6 +178,33 @@ function Home2({
     loadBestTournament()
   }, [userId])
 
+  useEffect(() => {
+    if (!userId) {
+      setLessonTrack(null)
+      setLessonsLoading(false)
+      return
+    }
+
+    let cancelled = false
+    const loadLessons = async () => {
+      setLessonsLoading(true)
+      try {
+        const data = await fetchLessons(userId)
+        if (!cancelled) setLessonTrack(data)
+      } catch (error) {
+        if (!cancelled) setLessonTrack(null)
+        console.error('Could not load lessons for dashboard', error)
+      } finally {
+        if (!cancelled) setLessonsLoading(false)
+      }
+    }
+
+    loadLessons()
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
   const profileInitials = useMemo(
     () =>
       profileName
@@ -187,17 +217,21 @@ function Home2({
     [profileName],
   )
 
-  const activeLevel: SkillLevelOption = skillLevel ?? 'intermediate'
-  const track = tracks[activeLevel]
-
-  const firstPendingIndex = track.nodes.findIndex((node) => node.status !== 'done')
-  const currentIndex = track.nodes.findIndex((node) => node.status === 'current')
+  const activeLevel: SkillLevelOption = (lessonTrack?.skillLevel ?? skillLevel ?? 'intermediate') as SkillLevelOption
+  const trackLessons = (lessonTrack?.lessons ?? tracks[activeLevel]).map((lesson) => ({
+    type: 'lesson',
+    ...lesson,
+  }))
+  const firstPendingIndex = trackLessons.findIndex((node) => node.status !== 'done')
+  const currentIndex = trackLessons.findIndex((node) => node.status === 'current')
   const resolvedCurrentIndex = currentIndex >= 0 ? currentIndex : firstPendingIndex >= 0 ? firstPendingIndex : 0
-  const currentLesson = track.nodes[resolvedCurrentIndex] as LessonNode | undefined
+  const currentLesson = trackLessons[resolvedCurrentIndex] as LessonNode | undefined
   const renderLessonCard = (label: string, lesson?: LessonNode) => (
     <div className={styles.lessonCard}>
       <div className={styles.lessonLabel}>{label}</div>
-      {lesson ? (
+      {lessonsLoading ? (
+        <div className={styles.lessonEmpty}>Loading your lesson path…</div>
+      ) : lesson ? (
         <>
           <div className={styles.lessonTitle}>{lesson.title}</div>
           <div className={styles.lessonMeta}>

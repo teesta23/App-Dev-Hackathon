@@ -9,7 +9,7 @@
 #then click the localhost url it spits out to checkout the Swagger UI backend (sorta like view the React pages)
 
 import os
-from typing import List, Optional
+from typing import Literal
 
 #for leetcode graphql
 import requests
@@ -60,6 +60,7 @@ app.add_middleware(
 )
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
+SkillLevel = Literal["beginner", "intermediate", "advanced"]
 
 #user document for mongo
 class UserModel(BaseModel):
@@ -72,6 +73,8 @@ class UserModel(BaseModel):
     lcUsername: str | None = None
     leetcodeProfile: dict | None = None
     avatar: str | None = None
+    skillLevel: SkillLevel | None = None
+    completedLessons: list[str] = Field(default_factory=list)
     roomItems: list["RoomItemModel"] = Field(default_factory=list)
     model_config = ConfigDict(
         populate_by_name=True,
@@ -87,6 +90,8 @@ class UpdateUserModel(BaseModel):
     lcUsername: str | None = None
     leetcodeProfile: dict | None = None
     avatar: str | None = None
+    skillLevel: SkillLevel | None = None
+    completedLessons: list[str] | None = None
     model_config = ConfigDict(
         json_encoders={ObjectId: str},
     )
@@ -120,6 +125,15 @@ class RoomItemsPayload(BaseModel):
 
 class RoomPurchaseRequest(BaseModel):
     itemId: str
+
+class SkillLevelRequest(BaseModel):
+    skillLevel: SkillLevel
+
+class LessonCompleteResponse(BaseModel):
+    skillLevel: SkillLevel
+    lessons: list[dict]
+    points: int
+    pointsAwarded: int
 
 UserModel.model_rebuild()
 
@@ -203,6 +217,177 @@ ROOM_CATALOG: dict[str, dict] = {
     "speaker": {"cost": 220, "default_owned": False, "x": 38.0, "y": 18.0},
 }
 
+LESSON_TRACKS: dict[SkillLevel, list[dict]] = {
+    "beginner": [
+        {
+            "id": "hello-world",
+            "title": "hello world + printing",
+            "focus": "output + syntax",
+            "duration": "8 min read",
+            "points": 60,
+            "icon": "{}",
+            "url": "https://www.freecodecamp.org/news/python-hello-world/",
+        },
+        {
+            "id": "variables",
+            "title": "variables + types",
+            "focus": "data basics",
+            "duration": "10 min read",
+            "points": 70,
+            "icon": "Aa",
+            "url": "https://www.w3schools.com/python/python_variables.asp",
+        },
+        {
+            "id": "conditions",
+            "title": "conditionals in python",
+            "focus": "logic",
+            "duration": "12 min read",
+            "points": 80,
+            "icon": "??",
+            "url": "https://www.programiz.com/python-programming/if-elif-else",
+        },
+        {
+            "id": "loops",
+            "title": "loops that make sense",
+            "focus": "loops",
+            "duration": "12 min read",
+            "points": 90,
+            "icon": "LO",
+            "url": "https://realpython.com/python-for-loop/",
+        },
+        {
+            "id": "functions",
+            "title": "functions 101",
+            "focus": "functions",
+            "duration": "14 min read",
+            "points": 100,
+            "icon": "fx",
+            "url": "https://www.freecodecamp.org/news/functions-in-python-a-beginners-guide/",
+        },
+        {
+            "id": "lists",
+            "title": "lists + arrays",
+            "focus": "collections",
+            "duration": "14 min read",
+            "points": 110,
+            "icon": "[]",
+            "url": "https://realpython.com/python-lists-tuples/",
+        },
+    ],
+    "intermediate": [
+        {
+            "id": "arrays",
+            "title": "array and string review",
+            "focus": "arrays",
+            "duration": "12 min read",
+            "points": 80,
+            "icon": "AR",
+            "url": "https://www.geeksforgeeks.org/array-data-structure/",
+        },
+        {
+            "id": "two-pointers",
+            "title": "two-pointer patterns",
+            "focus": "patterns",
+            "duration": "14 min read",
+            "points": 90,
+            "icon": "<>",
+            "url": "https://www.geeksforgeeks.org/two-pointers-technique/",
+        },
+        {
+            "id": "recursion",
+            "title": "recursion drills",
+            "focus": "recursion",
+            "duration": "16 min read",
+            "points": 100,
+            "icon": "RE",
+            "url": "https://www.geeksforgeeks.org/recursion/",
+        },
+        {
+            "id": "dfs",
+            "title": "depth-first search",
+            "focus": "tree/graph traversal",
+            "duration": "15 min read",
+            "points": 110,
+            "icon": "TR",
+            "url": "https://www.programiz.com/dsa/graph-dfs",
+        },
+        {
+            "id": "bfs",
+            "title": "breadth-first search",
+            "focus": "graph traversal",
+            "duration": "14 min read",
+            "points": 120,
+            "icon": "BF",
+            "url": "https://www.programiz.com/dsa/graph-bfs",
+        },
+        {
+            "id": "dp",
+            "title": "dynamic programming starter",
+            "focus": "dp",
+            "duration": "18 min read",
+            "points": 140,
+            "icon": "DP",
+            "url": "https://www.geeksforgeeks.org/dynamic-programming/",
+        },
+    ],
+    "advanced": [
+        {
+            "id": "goroutines",
+            "title": "go routines primer",
+            "focus": "concurrency",
+            "duration": "12 min read",
+            "points": 100,
+            "icon": "GO",
+            "url": "https://gobyexample.com/goroutines",
+        },
+        {
+            "id": "channels",
+            "title": "channels + pipelines",
+            "focus": "communication",
+            "duration": "12 min read",
+            "points": 110,
+            "icon": "CH",
+            "url": "https://gobyexample.com/channels",
+        },
+        {
+            "id": "ownership",
+            "title": "rust ownership",
+            "focus": "memory",
+            "duration": "16 min read",
+            "points": 120,
+            "icon": "RS",
+            "url": "https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html",
+        },
+        {
+            "id": "lifetimes",
+            "title": "lifetimes by example",
+            "focus": "borrowing",
+            "duration": "14 min read",
+            "points": 120,
+            "icon": "LT",
+            "url": "https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html",
+        },
+        {
+            "id": "ts-generics",
+            "title": "typescript generics",
+            "focus": "type systems",
+            "duration": "12 min read",
+            "points": 110,
+            "icon": "<T>",
+            "url": "https://www.typescriptlang.org/docs/handbook/2/generics.html",
+        },
+        {
+            "id": "perf",
+            "title": "concurrency patterns",
+            "focus": "performance",
+            "duration": "16 min read",
+            "points": 140,
+            "icon": "PF",
+            "url": "https://doc.rust-lang.org/book/ch16-00-concurrency.html",
+        },
+    ],
+}
+
 def default_room_items() -> list[dict]:
     return [
         {
@@ -247,6 +432,41 @@ def normalize_room_items(room_items: list[dict] | None) -> list[dict]:
 
 def clamp_percent(value: float) -> float:
     return max(0.0, min(100.0, float(value)))
+
+
+def get_lesson_track(skill_level: SkillLevel | None) -> list[dict]:
+    if skill_level in LESSON_TRACKS:
+        return LESSON_TRACKS[skill_level]  # type: ignore[index]
+    return LESSON_TRACKS["intermediate"]
+
+
+def build_lesson_progress(
+    user: dict,
+) -> dict:
+    skill_level: SkillLevel | None = user.get("skillLevel")  # type: ignore[assignment]
+    completed = set(user.get("completedLessons") or [])
+    track = get_lesson_track(skill_level)
+    lessons: list[dict] = []
+    found_current = False
+
+    for lesson in track:
+        status = "locked"
+        if lesson["id"] in completed:
+            status = "done"
+        elif not found_current:
+            status = "current"
+            found_current = True
+        lessons.append({**lesson, "status": status, "type": lesson.get("type", "lesson")})
+
+    if not found_current:
+        # all lessons completed, mark the last one as current to avoid empty states
+        if lessons:
+            lessons[-1]["status"] = "current"
+
+    return {
+        "skillLevel": skill_level or "intermediate",
+        "lessons": lessons,
+    }
 
 #score calculation based on deltas from when the participant joined
 def calculate_score(participant: dict) -> int:
@@ -332,6 +552,8 @@ async def award_user_points(user: dict, latest_profile: dict) -> int:
 def ensure_user_defaults(user: dict) -> dict:
     user.setdefault("points", 0)
     user.setdefault("streakSaves", 0)
+    user.setdefault("skillLevel", None)
+    user.setdefault("completedLessons", [])
     user["roomItems"] = normalize_room_items(user.get("roomItems"))
     return user
 
@@ -475,6 +697,8 @@ async def register_user(user: UserModel):
     new_user = user.model_dump(by_alias=True, exclude=["id"])
     new_user["email"] = normalized_email
     new_user.setdefault("streakSaves", 0)
+    new_user.setdefault("skillLevel", None)
+    new_user["completedLessons"] = []
     new_user["roomItems"] = default_room_items()
     result = await users_collection.insert_one(new_user)
     new_user["_id"] = str(result.inserted_id)
@@ -634,6 +858,99 @@ async def refresh_user_points(id: str):
 
     refreshed_user["_id"] = str(refreshed_user["_id"])
     return ensure_user_defaults(refreshed_user)
+
+
+@app.put(
+    "/users/{id}/skill-level",
+    response_description="Set a user's skill level and reset lesson progress",
+    response_model=UserModel,
+    response_model_by_alias=False,
+)
+async def set_skill_level(id: str, payload: SkillLevelRequest):
+    user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+
+    updated = await users_collection.find_one_and_update(
+        {"_id": ObjectId(id)},
+        {"$set": {"skillLevel": payload.skillLevel, "completedLessons": []}},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+
+    updated["_id"] = str(updated["_id"])
+    return ensure_user_defaults(updated)
+
+
+@app.get(
+    "/users/{id}/lessons",
+    response_description="Get a user's lesson track and progress",
+    response_model=LessonCompleteResponse,
+    response_model_by_alias=False,
+)
+async def get_lessons(id: str):
+    user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+
+    user = ensure_user_defaults(user)
+    payload = build_lesson_progress(user)
+
+    return {
+        **payload,
+        "points": int(user.get("points", 0)),
+        "pointsAwarded": 0,
+    }
+
+
+@app.post(
+    "/users/{id}/lessons/{lesson_id}/complete",
+    response_description="Mark a lesson complete and award points",
+    response_model=LessonCompleteResponse,
+    response_model_by_alias=False,
+)
+async def complete_lesson(id: str, lesson_id: str):
+    user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found")
+
+    user = ensure_user_defaults(user)
+    track = get_lesson_track(user.get("skillLevel"))
+    lesson_meta = next((lesson for lesson in track if lesson["id"] == lesson_id), None)
+    if not lesson_meta:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found for this track.")
+
+    completed = set(user.get("completedLessons") or [])
+    points_awarded = 0
+    if lesson_id not in completed:
+        completed.add(lesson_id)
+        points_awarded = int(lesson_meta.get("points", 0))
+        new_points = int(user.get("points", 0)) + points_awarded
+        await users_collection.update_one(
+            {"_id": ObjectId(id)},
+            {"$set": {"completedLessons": list(completed), "points": new_points}},
+        )
+    else:
+        await users_collection.update_one(
+            {"_id": ObjectId(id)},
+            {"$set": {"completedLessons": list(completed)}},
+        )
+
+    refreshed_user = await users_collection.find_one({"_id": ObjectId(id)})
+    if not refreshed_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User {id} not found after completion")
+
+    refreshed_user["_id"] = str(refreshed_user["_id"])
+    refreshed_user = ensure_user_defaults(refreshed_user)
+    payload = build_lesson_progress(refreshed_user)
+
+    return {
+        **payload,
+        "points": int(refreshed_user.get("points", 0)),
+        "pointsAwarded": points_awarded,
+    }
 
 
 @app.post(

@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import styles from './SkillLevel.module.css'
+import { setSkillLevel as saveSkillLevel } from './api/users'
+import { getStoredUserId } from './session'
 
 export type SkillLevelOption = 'beginner' | 'intermediate' | 'advanced'
 
@@ -10,6 +12,8 @@ type SkillLevelProps = {
 
 function SkillLevel({ onBack, onContinue }: SkillLevelProps) {
   const [selected, setSelected] = useState<SkillLevelOption | null>('intermediate')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const levels: Array<{
     id: SkillLevelOption
@@ -45,9 +49,25 @@ function SkillLevel({ onBack, onContinue }: SkillLevelProps) {
     },
   ]
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selected) return
-    onContinue?.(selected)
+    const userId = getStoredUserId()
+    if (!userId) {
+      onContinue?.(selected)
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+    try {
+      await saveSkillLevel(userId, selected)
+      onContinue?.(selected)
+    } catch (err) {
+      console.error('Could not save skill level', err)
+      setError('Could not save your skill level. Check your connection and try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -110,14 +130,15 @@ function SkillLevel({ onBack, onContinue }: SkillLevelProps) {
             })}
           </div>
 
+          {error ? <div className={styles.errorText}>{error}</div> : null}
           <div className={styles.actions}>
             <button
               className={`${styles.primaryButton} ${!selected ? styles.primaryDisabled : ''}`}
               type="button"
               onClick={handleContinue}
-              disabled={!selected}
+              disabled={!selected || saving}
             >
-              <span className={styles.arrowText}>&gt;</span> continue to lessons
+              <span className={styles.arrowText}>&gt;</span> {saving ? 'saving...' : 'continue to lessons'}
             </button>
           </div>
         </section>

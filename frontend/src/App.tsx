@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import Contact from './Contact.tsx'
 import Home2 from './Home2.tsx'
@@ -16,7 +16,8 @@ import codeImg from '../images/coding.png'
 import motivatedImg from '../images/motivated.png'
 import decorateImg from '../images/decorate.png'
 import streakImg from '../images/streak.png'
-import { clearStoredUserId } from './session.ts'
+import { clearStoredUserId, getStoredUserId } from './session.ts'
+import { fetchUser } from './api/users.ts'
 
 function App() {
   const landingFeatures = [
@@ -73,6 +74,21 @@ function App() {
     clearStoredUserId()
     setView('landing')
   }
+
+  useEffect(() => {
+    const userId = getStoredUserId()
+    if (!userId) return
+
+    fetchUser(userId)
+      .then((user) => {
+        if (user.skillLevel) {
+          setSkillLevel(user.skillLevel as SkillLevelOption)
+        }
+      })
+      .catch((error) => {
+        console.error('Could not load saved skill level', error)
+      })
+  }, [view])
 
   if (view === 'dashboard') {
     return (
