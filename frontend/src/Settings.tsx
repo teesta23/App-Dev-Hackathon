@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import styles from './Settings.module.css'
 import homeStyles from './Home2.module.css'
 import { updateUser } from './api/users'
+import { getStoredUserId } from './session'
 
 type SettingsProps = {
   onBack?: () => void
@@ -103,7 +104,7 @@ function Settings({ onBack, onLogout, onGoToSupport, onGoToTournaments, onGoToLe
     setSubmitting(true)
 
     try {
-      const userId = localStorage.getItem('user_id')
+      const userId = getStoredUserId()
       if (!userId) {
         setError('User not logged in.')
         return
