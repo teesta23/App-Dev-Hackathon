@@ -14,4 +14,4 @@ Your points can be used to buy different objects for your room, as well as buy s
 Streaks are based on tournament groups, so you're incentivized to keep up a streak with your friends! This encourages you to do your daily Leetcode problems consistently, and promotes friendship and community. Each person in the tournament needs to solve at least 1 leetcode a day to keep the group streak alive. Don't be the one to ruin that streak!
 
 So what are you waiting for?
-<h2>Join Leeterboard! </h2>
+<h2>Join Leeterboard!! </h2>
