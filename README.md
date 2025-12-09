@@ -2,7 +2,7 @@
 
 <h1> Leeterboard! </h1>
 
-Leeterboard is a website that allows you to solve leetcode problems with your friends! It's a website that will help you form a healthy daily habit made using Leetcode API.
+Leeterboard is a website that allows you to solve leetcode problems with your friends! It's a website that will help you form a healthy daily habit and is connected to your personal Leetcode account using the public LeetCode profiles via GraphQL.
 <h3> How to Use </h3>
 
 Leeterboard is easy to use! All you have to do is link your Leetcode account and email, create a username and password, and your account is set! Either create a tournament or join a tournament to start competing with friends and earn points. You can also use our learning track matched to your difficulty level so you can read relevant articles and gain points!
