@@ -1,42 +1,17 @@
 # App-Dev-Hackathon
 
-DOCUMENT FOR EACH USER:
-username: string (required, unique)
-email: string (required, unique)
-password: string (hashed)
-leetcode_username: string
-points: number (default 0)
-problems_solved: number (default 0)
-daily_streak: number (default 0)
-tournaments: array (default [])
-tournaments_played: number (default 0)
-tournaments_won: number (default 0)
-bathroom: array (default [0,0,0,0,0,0,0,0,0,0])
-    each index represents a different part of the bathroom
-    i0-floor
-    i1-walls
-    i2-mirror
-    i3-sink
-    i4-toilet
-    i5-trashcan
-    i6-bathtub
-    i7-shower curtain
-    i8-shower head
-    i9-rug
-created_at: datetime
-last_updated: datetime
+<h1> Leeterboard! </h1>
 
-To set up backend you have to run a couple commands on the terminal.
+Leeterboard is a website that allows you to solve leetcode problems with your friends! It's a website that will help you form a healthy daily habit made using Leetcode API.
+<h3> How to Use </h3>
 
-In the backend directory, run this command:
-    Windows: python -m venv .venv
-    Mac/Linux: python3 -m venv .venv
+Leeterboard is easy to use! All you have to do is link your Leetcode account and email, create a username and password, and your account is set! Either create a tournament or join a tournament to start competing with friends and earn points. You can also use our learning track matched to your difficulty level so you can read relevant articles and gain points!
+<h3> Points </h3>
 
-This creates a .venv dir for you in the backend folder.
+Your points can be used to buy different objects for your room, as well as buy streak saves when you're busy with life. Points allow for personalization as well as flexibility, so be sure to gain as much as you can! The points are saved onto the backend, so are easily accessed every time you log in.
+<h3> Streaks </h3>
 
-Now you must run I GOT TIRED AND WENT TO BED I WILL FINISH TMR
+Streaks are based on tournament groups, so you're incentivized to keep up a streak with your friends! This encourages you to do your daily Leetcode problems consistently, and promotes friendship and community.
 
-
-Leeterboard is a website that allows you to solve leetcode problems with your friends! Using a Leetcode API, we allow you to make tournaments and compete with friends. With our backend, we save points on your account based on how you did on the tournament, and you can use those points to buy different objects for your room.
-
-
+So what are you waiting for?
+<h2>Join Leeterboard! </h2>
